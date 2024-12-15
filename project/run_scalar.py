@@ -2,15 +2,17 @@
 Be sure you have minitorch installed in you Virtual Env.
 >>> pip install -Ue .
 """
-import random
 
+import random
 import minitorch
 
 
 class Network(minitorch.Module):
-    def __init__(self, hidden_layers):
+    def __init__(self, hidden_layer_size):
         super().__init__()
-        raise NotImplementedError("Need to include this file from past assignment.")
+        self.layer1 = Linear(2, hidden_layer_size)
+        self.layer2 = Linear(hidden_layer_size, hidden_layer_size)
+        self.layer3 = Linear(hidden_layer_size, 1)
 
     def forward(self, x):
         middle = [h.relu() for h in self.layer1.forward(x)]
@@ -33,13 +35,17 @@ class Linear(minitorch.Module):
                 )
         for j in range(out_size):
             self.bias.append(
-                self.add_parameter(
-                    f"bias_{j}", minitorch.Scalar(2 * (random.random() - 0.5))
-                )
+                self.add_parameter(f"bias_{j}", minitorch.Scalar(2 * (random.random() - 0.5)))
             )
 
     def forward(self, inputs):
-        raise NotImplementedError("Need to include this file from past assignment.")
+        res = [b.value for b in self.bias]
+
+        for i, row_weights in enumerate(self.weights):
+            for j, weight in enumerate(row_weights):
+                res[j] += inputs[i] * weight.value
+
+        return res
 
 
 def default_log_fn(epoch, total_loss, correct, losses):
@@ -98,8 +104,14 @@ class ScalarTrain:
 
 
 if __name__ == "__main__":
+    # PTS = 50
+    # HIDDEN_LAYER_SIZE = 2
+    # RATE = 0.5
+    # data = minitorch.datasets["Simple"](PTS)
+    # ScalarTrain(HIDDEN_LAYER_SIZE).train(data, RATE)
+
     PTS = 50
-    HIDDEN = 2
-    RATE = 0.5
-    data = minitorch.datasets["Simple"](PTS)
-    ScalarTrain(HIDDEN).train(data, RATE)
+    HIDDEN_LAYER_SIZE = 4
+    RATE = 0.1
+    data = minitorch.datasets["Xor"](PTS)
+    ScalarTrain(HIDDEN_LAYER_SIZE).train(data, RATE, max_epochs=1000)

@@ -1,0 +1,7 @@
+[project]
+name = "minitorch"
+version = "0.1.0"
+description = "PyTorch from scratch"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []

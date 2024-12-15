@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Tuple
-
+from typing import Any, Iterable, Tuple
 from typing_extensions import Protocol
-
+from collections import deque
 # ## Task 1.1
 # Central Difference calculation
 
@@ -22,7 +21,12 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    left_args = vals[:arg]
+    right_args = vals[arg + 1 :]
+    left_f = f(*left_args, vals[arg] - epsilon, *right_args)
+    right_f = f(*left_args, vals[arg] + epsilon, *right_args)
+    difference = (right_f - left_f) / (2.0 * epsilon)
+    return difference
 
 
 variable_count = 1
@@ -60,7 +64,51 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+
+    # Kahn's algorithm
+    indegrees = {}
+    adj = {variable: []}
+
+    q = deque([variable])
+    while len(q) > 0:
+        v = q.popleft()
+        for i in v.history.inputs:
+            if i.is_constant():
+                continue
+            indegrees[i] = indegrees.get(i, 0) + 1
+            adj.setdefault(v, []).append(i)
+            q.append(i)
+
+    assert len(q) == 0
+    q.append(variable)
+
+    res = []
+    while len(q) > 0:
+        v = q.popleft()
+        res.append(v)
+        for i in adj.get(v, []):
+            indegrees[i] -= 1
+            if indegrees[i] == 0:
+                q.append(i)
+
+    return res
+
+    # DFS
+    # visited = set()
+    # res = []
+
+    # dfs approach
+    # def dfs(node) -> None:
+    #     if node.is_constant() or node in visited:
+    #         return
+    #     for i in node.history.inputs:
+    #         dfs(i)
+    #     visited.add(node)
+    #     res.append(node)
+
+    # dfs(variable)
+
+    # return reversed(res)
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -74,7 +122,15 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+
+    variable_to_deriv = {variable: deriv}
+
+    for v in topological_sort(variable):
+        if v.is_leaf():
+            v.accumulate_derivative(variable_to_deriv[v])
+        else:
+            for in_var, new_deriv in v.chain_rule(variable_to_deriv[v]):
+                variable_to_deriv[in_var] = variable_to_deriv.get(in_var, 0) + new_deriv
 
 
 @dataclass

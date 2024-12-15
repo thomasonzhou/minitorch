@@ -1,19 +1,20 @@
-[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-2e0aaae1b6195c2367325f4f02e2d04e9abb55f0b24a779b69b11b9e10269abc.svg)](https://classroom.github.com/online_ide?assignment_repo_id=17539181&assignment_repo_type=AssignmentRepo)
-# MiniTorch Module 2
+# About 
 
-<img src="https://minitorch.github.io/minitorch.svg" width="50%">
+This is an reimplementation of the PyTorch API. It supports the following features:
 
+- [x] Automatic differentiation
+- [x] Backpropagation
 
-* Docs: https://minitorch.github.io/
+# Getting started
 
-* Overview: https://minitorch.github.io/module2/module2/
+To install dependencies, create a virtual environment and install the required packages:
 
-This assignment requires the following files from the previous assignments. You can get these by running
-
-```bash
-python sync_previous_module.py previous-module-dir current-module-dir
+(I recommend uv because it is fast)
+```python
+uv venv .venv 
+source .venv/bin/activate
+uv pip install -r requirements.txt
+uv pip install -r requirements.extra.txt
+uv pip install -Ue .
 ```
 
-The files that will be synced are:
-
-        minitorch/operators.py minitorch/module.py minitorch/autodiff.py minitorch/scalar.py minitorch/module.py project/run_manual.py project/run_scalar.py
