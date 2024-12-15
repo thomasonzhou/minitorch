@@ -16,6 +16,7 @@ MAX_DIMS = 32
 
 class IndexingError(RuntimeError):
     "Exception raised for indexing errors."
+
     pass
 
 
@@ -42,9 +43,7 @@ def index_to_position(index: Index, strides: Strides) -> int:
     Returns:
         Position in storage
     """
-
-    # TODO: Implement for Task 2.1.
-    raise NotImplementedError("Need to implement for Task 2.1")
+    return sum(i * s for i, s in zip(index, strides))
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
@@ -60,13 +59,12 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
-    # TODO: Implement for Task 2.1.
-    raise NotImplementedError("Need to implement for Task 2.1")
+    for i, dim in enumerate(strides_from_shape(shape)):
+        idx, ordinal = divmod(ordinal, dim)
+        out_index[i] = idx
 
 
-def broadcast_index(
-    big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex
-) -> None:
+def broadcast_index(big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex) -> None:
     """
     Convert a `big_index` into `big_shape` to a smaller `out_index`
     into `shape` following broadcasting rules. In this case
@@ -222,8 +220,11 @@ class TensorData:
             range(len(self.shape))
         ), f"Must give a position to each dimension. Shape: {self.shape} Order: {order}"
 
-        # TODO: Implement for Task 2.1.
-        raise NotImplementedError("Need to implement for Task 2.1")
+        return TensorData(
+            storage=self._storage,
+            shape=tuple(self.shape[i] for i in order),
+            strides=tuple(self.strides[i] for i in order),
+        )
 
     def to_string(self) -> str:
         s = ""
@@ -248,3 +249,6 @@ class TensorData:
             else:
                 s += " "
         return s
+
+    def __repr__(self):
+        return f"TensorData(shape={self.shape}, dims={self.dims}, size={self.size}, storage={self._storage})"
