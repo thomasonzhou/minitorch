@@ -1,3 +1,3 @@
 from setuptools import setup
 
-setup(py_modules=["minitorch"])
+setup(py_modules=[])

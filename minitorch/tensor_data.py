@@ -64,6 +64,42 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index[i] = idx
 
 
+def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
+    """
+    Broadcast two shapes to create a new union shape.
+
+    Args:
+        shape1 : first shape
+        shape2 : second shape
+
+    Returns:
+        broadcasted shape
+
+    Raises:
+        IndexingError : if cannot broadcast
+    """
+    if len(shape1) < len(shape2):
+        smaller = shape1
+        larger = shape2
+    else:
+        smaller = shape2
+        larger = shape1
+
+    len_diff = len(larger) - len(smaller)
+    smaller = [1] * len_diff + list(smaller)
+
+    res = []
+    for s1, s2 in zip(smaller, larger):
+        if s1 == 1 or s2 == 1:
+            res.append(max(s1, s2))
+        elif s1 == s2:
+            res.append(s1)
+        else:
+            raise IndexingError
+
+    return tuple(res)
+
+
 def broadcast_index(big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex) -> None:
     """
     Convert a `big_index` into `big_shape` to a smaller `out_index`
@@ -81,26 +117,8 @@ def broadcast_index(big_index: Index, big_shape: Shape, shape: Shape, out_index:
     Returns:
         None
     """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError("Need to implement for Task 2.2")
-
-
-def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
-    """
-    Broadcast two shapes to create a new union shape.
-
-    Args:
-        shape1 : first shape
-        shape2 : second shape
-
-    Returns:
-        broadcasted shape
-
-    Raises:
-        IndexingError : if cannot broadcast
-    """
-    # TODO: Implement for Task 2.2.
-    raise NotImplementedError("Need to implement for Task 2.2")
+    for i in range(-1, -len(out_index) - 1, -1):
+        out_index[i] = min(big_index[i], shape[i] - 1)
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:

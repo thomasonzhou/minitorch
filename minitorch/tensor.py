@@ -181,6 +181,9 @@ class Tensor:
     def __rmul__(self, b: TensorLike) -> Tensor:
         return self * b
 
+    def __hash__(self) -> int:
+        return self.unique_id
+
     def all(self, dim: Optional[int] = None) -> Tensor:
         if dim is None:
             return All.apply(self.view(self.size), self._ensure_tensor(0))
@@ -301,9 +304,7 @@ class Tensor:
 
     def zeros(self, shape: Optional[UserShape] = None) -> Tensor:
         def zero(shape: UserShape) -> Tensor:
-            return Tensor.make(
-                [0.0] * int(operators.prod(shape)), shape, backend=self.backend
-            )
+            return Tensor.make([0.0] * int(operators.prod(shape)), shape, backend=self.backend)
 
         if shape is None:
             out = zero(self.shape)
@@ -355,10 +356,7 @@ class Tensor:
 
         x = h.last_fn._backward(h.ctx, d_output)
         assert len(x) == len(h.inputs), f"Bug in function {h.last_fn}"
-        return [
-            (inp, inp.expand(self._ensure_tensor(d_in)))
-            for inp, d_in in zip(h.inputs, x)
-        ]
+        return [(inp, inp.expand(self._ensure_tensor(d_in))) for inp, d_in in zip(h.inputs, x)]
 
     def backward(self, grad_output: Optional[Tensor] = None) -> None:
         if grad_output is None:

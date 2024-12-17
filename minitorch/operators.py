@@ -151,12 +151,16 @@ def zipWith(f: Callable[[float, float], float], l1: list, l2: list) -> list:
 
 def reduce(f: Callable[[float, float], float], l: list) -> float:
     """Reduce a list l to one value using repeated calls to f."""
-    if len(l) <= 1:
-        return 0
-    curr = f(l[0], l[1])
-    for idx in range(2, len(l)):
-        curr = f(curr, l[idx])
-    return curr
+    match len(l):
+        case 0:
+            return 0
+        case 1:
+            return l[0]
+        case _:
+            curr = f(l[0], l[1])
+            for idx in range(2, len(l)):
+                curr = f(curr, l[idx])
+            return curr
 
 
 def negList(l: list) -> list:
