@@ -120,7 +120,10 @@ class Sigmoid(Function):
         (sig,) = ctx.saved_tensors
         part1 = grad_output.f.mul_zip(grad_output, sig)
         return part1.f.mul_zip(
-            part1, sig.f.add_zip(sig.f.neg_map(sig), sig.make([1], (1,), backend=sig.backend))
+            part1,
+            sig.f.add_zip(
+                sig.f.neg_map(sig), minitorch.Tensor.make([1], (1,), backend=sig.backend)
+            ),
         )
 
 
@@ -188,7 +191,7 @@ class LT(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return grad_output, grad_output
+        return 0, 0
 
 
 class EQ(Function):
@@ -198,7 +201,7 @@ class EQ(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return grad_output, grad_output
+        return 0, 0
 
 
 class IsClose(Function):
@@ -210,13 +213,22 @@ class IsClose(Function):
 class Permute(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
-        ctx.save_for_backward(order)
-        return a._new(a._tensor.permute(*order))
+        ctx.save_for_backward(a)
+        unpacked = [int(n) for n in order._tensor._storage]
+        new_data = a._tensor.permute(*unpacked)
+        return minitorch.Tensor.make(
+            a._tensor._storage, new_data.shape, new_data.strides, backend=a.backend
+        )
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        (inverse_order) = ctx.saved_tensors
-        return 0, grad_output.permute(inverse_order)
+        (a,) = ctx.saved_tensors
+        return minitorch.Tensor.make(
+            grad_output._tensor._storage,
+            a._tensor.shape,
+            a._tensor.strides,
+            backend=grad_output.backend,
+        ), 0
 
 
 class View(Function):
@@ -261,7 +273,7 @@ class MatMul(Function):
         def transpose(a: Tensor) -> Tensor:
             order = list(range(a.dims))
             order[-2], order[-1] = order[-1], order[-2]
-            return a._new(a._tensor.permute(*order))
+            return a._new(a._tensor.permute(order))
 
         return (
             grad_output.f.matrix_multiply(grad_output, transpose(t2)),
