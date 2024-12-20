@@ -20,3 +20,6 @@ uv pip install -r requirements.extra.txt
 uv pip install -Ue .
 ```
 
+# Credit
+
+[Minitorch by Sasha Rush](https://minitorch.github.io/)
