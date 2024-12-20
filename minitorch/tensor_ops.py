@@ -258,10 +258,11 @@ def tensor_map(fn: Callable[[float], float]) -> Any:
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
+        out_idx = [0] * len(out_shape)
+        in_idx = [0] * len(in_shape)
+
         for i in range(len(out)):
-            out_idx = [0] * len(out_shape)
             to_index(i, out_shape, out_idx)
-            in_idx = [0] * len(in_shape)
             # to_index(i, in_shape, in_idx)
             broadcast_index(out_idx, out_shape, in_shape, in_idx)
 
@@ -316,14 +317,13 @@ def tensor_zip(fn: Callable[[float, float], float]) -> Any:
         b_shape: Shape,
         b_strides: Strides,
     ) -> None:
+        out_idx = [0] * len(out_shape)
+        a_idx = [0] * len(a_shape)
+        b_idx = [0] * len(b_shape)
+
         for i in range(len(out)):
-            out_idx = [0] * len(out_shape)
             to_index(i, out_shape, out_idx)
-
-            a_idx = [0] * len(a_shape)
             broadcast_index(out_idx, out_shape, a_shape, a_idx)
-
-            b_idx = [0] * len(b_shape)
             broadcast_index(out_idx, out_shape, b_shape, b_idx)
 
             out_pos = index_to_position(out_idx, out_strides)
@@ -365,11 +365,11 @@ def tensor_reduce(fn: Callable[[float, float], float]) -> Any:
         a_strides: Strides,
         reduce_dim: int,
     ) -> None:
-        for i in range(len(a_storage)):
-            a_idx = [0] * len(a_shape)
-            to_index(i, a_shape, a_idx)
+        a_idx = [0] * len(a_shape)
+        out_idx = [0] * len(out_shape)
 
-            out_idx = [0] * len(out_shape)
+        for i in range(len(a_storage)):
+            to_index(i, a_shape, a_idx)
             broadcast_index(a_idx, a_shape, out_shape, out_idx)
 
             out_pos = index_to_position(out_idx, out_strides)

@@ -1,6 +1,4 @@
-"""
-Implementation of the autodifferentiation Functions for Tensor.
-"""
+"""Implementation of the autodifferentiation Functions for Tensor."""
 
 from __future__ import annotations
 
@@ -23,7 +21,7 @@ if TYPE_CHECKING:
 
 
 def wrap_tuple(x):  # type: ignore
-    "Turn a possible value into a tuple"
+    """Turn a possible value into a tuple"""
     if isinstance(x, tuple):
         return x
     return (x,)
@@ -171,8 +169,8 @@ class Sum(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        a_shape, dim = ctx.saved_values
-        return grad_output, 0.0
+        a_shape, dim = ctx.saved_tensors
+        return grad_output, grad_output.zeros(grad_output.shape)
 
 
 class All(Function):
@@ -191,7 +189,7 @@ class LT(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return 0, 0
+        return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
 
 
 class EQ(Function):
@@ -201,7 +199,7 @@ class EQ(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return 0, 0
+        return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
 
 
 class IsClose(Function):
@@ -213,22 +211,17 @@ class IsClose(Function):
 class Permute(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
-        ctx.save_for_backward(a)
         unpacked = [int(n) for n in order._tensor._storage]
-        new_data = a._tensor.permute(*unpacked)
-        return minitorch.Tensor.make(
-            a._tensor._storage, new_data.shape, new_data.strides, backend=a.backend
-        )
+        ctx.save_for_backward(unpacked)
+        return a._new(a._tensor.permute(*unpacked))
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        (a,) = ctx.saved_tensors
-        return minitorch.Tensor.make(
-            grad_output._tensor._storage,
-            a._tensor.shape,
-            a._tensor.strides,
-            backend=grad_output.backend,
-        ), 0
+        (unpacked,) = ctx.saved_tensors
+        reverse_order_map = {pos: i for i, pos in enumerate(unpacked)}
+        prev_order = [reverse_order_map[i] for i in range(len(reverse_order_map))]
+
+        return grad_output._new(grad_output._tensor.permute(*prev_order)), 0
 
 
 class View(Function):
@@ -273,7 +266,7 @@ class MatMul(Function):
         def transpose(a: Tensor) -> Tensor:
             order = list(range(a.dims))
             order[-2], order[-1] = order[-1], order[-2]
-            return a._new(a._tensor.permute(order))
+            return a._new(a._tensor.permute(*order))
 
         return (
             grad_output.f.matrix_multiply(grad_output, transpose(t2)),
@@ -283,8 +276,7 @@ class MatMul(Function):
 
 # Helpers for Constructing tensors
 def zeros(shape: UserShape, backend: TensorBackend = SimpleBackend) -> Tensor:
-    """
-    Produce a zero tensor of size `shape`.
+    """Produce a zero tensor of size `shape`.
 
     Args:
         shape : shape of tensor
@@ -292,6 +284,7 @@ def zeros(shape: UserShape, backend: TensorBackend = SimpleBackend) -> Tensor:
 
     Returns:
         new tensor
+
     """
     return minitorch.Tensor.make([0] * int(operators.prod(shape)), shape, backend=backend)
 
@@ -301,8 +294,7 @@ def rand(
     backend: TensorBackend = SimpleBackend,
     requires_grad: bool = False,
 ) -> Tensor:
-    """
-    Produce a random tensor of size `shape`.
+    """Produce a random tensor of size `shape`.
 
     Args:
         shape : shape of tensor
@@ -311,6 +303,7 @@ def rand(
 
     Returns:
         :class:`Tensor` : new tensor
+
     """
     vals = [random.random() for _ in range(int(operators.prod(shape)))]
     tensor = minitorch.Tensor.make(vals, shape, backend=backend)
@@ -324,8 +317,7 @@ def _tensor(
     backend: TensorBackend = SimpleBackend,
     requires_grad: bool = False,
 ) -> Tensor:
-    """
-    Produce a tensor with data ls and shape `shape`.
+    """Produce a tensor with data ls and shape `shape`.
 
     Args:
         ls: data for tensor
@@ -335,6 +327,7 @@ def _tensor(
 
     Returns:
         new tensor
+
     """
     tensor = minitorch.Tensor.make(ls, shape, backend=backend)
     tensor.requires_grad_(requires_grad)
@@ -342,8 +335,7 @@ def _tensor(
 
 
 def tensor(ls: Any, backend: TensorBackend = SimpleBackend, requires_grad: bool = False) -> Tensor:
-    """
-    Produce a tensor with data and shape from ls
+    """Produce a tensor with data and shape from ls
 
     Args:
         ls: data for tensor
@@ -352,6 +344,7 @@ def tensor(ls: Any, backend: TensorBackend = SimpleBackend, requires_grad: bool 
 
     Returns:
         :class:`Tensor` : new tensor
+
     """
 
     def shape(ls: Any) -> List[int]:

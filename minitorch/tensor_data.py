@@ -15,7 +15,7 @@ MAX_DIMS = 32
 
 
 class IndexingError(RuntimeError):
-    "Exception raised for indexing errors."
+    """Exception raised for indexing errors."""
 
     pass
 
@@ -32,8 +32,7 @@ UserStrides: TypeAlias = Sequence[int]
 
 
 def index_to_position(index: Index, strides: Strides) -> int:
-    """
-    Converts a multidimensional tensor `index` into a single-dimensional position in
+    """Converts a multidimensional tensor `index` into a single-dimensional position in
     storage based on strides.
 
     Args:
@@ -42,13 +41,16 @@ def index_to_position(index: Index, strides: Strides) -> int:
 
     Returns:
         Position in storage
+
     """
-    return sum(i * s for i, s in zip(index, strides))
+    pos = 0
+    for i, s in zip(index, strides):
+        pos += i * s
+    return pos
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
-    """
-    Convert an `ordinal` to an index in the `shape`.
+    """Convert an `ordinal` to an index in the `shape`.
     Should ensure that enumerating position 0 ... size of a
     tensor produces every index exactly once. It
     may not be the inverse of `index_to_position`.
@@ -59,14 +61,14 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
-    for i, dim in enumerate(strides_from_shape(shape)):
-        idx, ordinal = divmod(ordinal, dim)
-        out_index[i] = idx
+    product = 1.0
+    for i in range(len(shape) - 1, -1, -1):
+        out_index[i] = int(ordinal % (shape[i] * product) // product)
+        product *= shape[i]
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
-    """
-    Broadcast two shapes to create a new union shape.
+    """Broadcast two shapes to create a new union shape.
 
     Args:
         shape1 : first shape
@@ -77,6 +79,7 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
 
     Raises:
         IndexingError : if cannot broadcast
+
     """
     if len(shape1) < len(shape2):
         smaller = shape1
@@ -90,19 +93,20 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
 
     res = []
     for s1, s2 in zip(smaller, larger):
-        if s1 == 1 or s2 == 1:
-            res.append(max(s1, s2))
-        elif s1 == s2:
+        if s1 == s2:
+            res.append(s1)
+        elif s1 == 1:
+            res.append(s2)
+        elif s2 == 1:
             res.append(s1)
         else:
-            raise IndexingError
+            raise IndexingError(f"Cannot broadcast incompatible shapes {s1} and {s2}")
 
     return tuple(res)
 
 
 def broadcast_index(big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex) -> None:
-    """
-    Convert a `big_index` into `big_shape` to a smaller `out_index`
+    """Convert a `big_index` into `big_shape` to a smaller `out_index`
     into `shape` following broadcasting rules. In this case
     it may be larger or with more dimensions than the `shape`
     given. Additional dimensions may need to be mapped to 0 or
@@ -116,9 +120,11 @@ def broadcast_index(big_index: Index, big_shape: Shape, shape: Shape, out_index:
 
     Returns:
         None
+
     """
-    for i in range(-1, -len(out_index) - 1, -1):
-        out_index[i] = min(big_index[i], shape[i] - 1)
+    for i in range(len(shape)):
+        offset = len(big_shape) - len(shape) + i
+        out_index[i] = big_index[offset] if shape[i] != 1 else 0
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
@@ -169,11 +175,11 @@ class TensorData:
             self._storage = numba.cuda.to_device(self._storage)
 
     def is_contiguous(self) -> bool:
-        """
-        Check that the layout is contiguous, i.e. outer dimensions have bigger strides than inner dimensions.
+        """Check that the layout is contiguous, i.e. outer dimensions have bigger strides than inner dimensions.
 
         Returns:
             bool : True if contiguous
+
         """
         last = 1e9
         for stride in self._strides:
@@ -225,14 +231,14 @@ class TensorData:
         return (self._storage, self._shape, self._strides)
 
     def permute(self, *order: int) -> TensorData:
-        """
-        Permute the dimensions of the tensor.
+        """Permute the dimensions of the tensor.
 
         Args:
             order (list): a permutation of the dimensions
 
         Returns:
             New `TensorData` with the same storage and a new dimension order.
+
         """
         assert list(sorted(order)) == list(
             range(len(self.shape))
