@@ -2,13 +2,11 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Tuple
 from typing_extensions import Protocol
 from collections import deque
-# ## Task 1.1
 # Central Difference calculation
 
 
 def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) -> Any:
-    r"""
-    Computes an approximation to the derivative of `f` with respect to one arg.
+    r"""Computes an approximation to the derivative of `f` with respect to one arg.
 
     See :doc:`derivative` or https://en.wikipedia.org/wiki/Finite_difference for more details.
 
@@ -20,6 +18,7 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
+
     """
     left_args = vals[:arg]
     right_args = vals[arg + 1 :]
@@ -55,24 +54,23 @@ class Variable(Protocol):
 
 
 def topological_sort(variable: Variable) -> Iterable[Variable]:
-    """
-    Computes the topological order of the computation graph.
+    """Computes the topological order of the computation graph.
 
     Args:
         variable: The right-most variable
 
     Returns:
         Non-constant Variables in topological order starting from the right.
-    """
 
+    """
     # Kahn's algorithm
-    indegrees = {}
-    adj = {variable: []}
+    indegrees: dict[Variable, int] = {}
+    adj: dict[Variable, list[Variable]] = {variable: []}
 
     q = deque([variable])
     while len(q) > 0:
         v = q.popleft()
-        for i in v.history.inputs:
+        for i in v.history.inputs:  # type: ignore[attr-defined]
             if i.is_constant():
                 continue
             indegrees[i] = indegrees.get(i, 0) + 1
@@ -112,8 +110,7 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
-    """
-    Runs backpropagation on the computation graph in order to
+    """Runs backpropagation on the computation graph in order to
     compute derivatives for the leave nodes.
 
     Args:
@@ -121,8 +118,8 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
         deriv  : Its derivative that we want to propagate backward to the leaves.
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
-    """
 
+    """
     variable_to_deriv = {variable: deriv}
 
     for v in topological_sort(variable):
@@ -135,19 +132,18 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
 @dataclass
 class Context:
-    """
-    Context class is used by `Function` to store information during the forward pass.
-    """
+    """Context class is used by `Function` to store information during the forward pass."""
 
     no_grad: bool = False
     saved_values: Tuple[Any, ...] = ()
 
     def save_for_backward(self, *values: Any) -> None:
-        "Store the given `values` if they need to be used during backpropagation."
+        """Store the given `values` if they need to be used during backpropagation."""
         if self.no_grad:
             return
         self.saved_values = values
 
     @property
     def saved_tensors(self) -> Tuple[Any, ...]:
+        """Return saved values for backward pass"""
         return self.saved_values

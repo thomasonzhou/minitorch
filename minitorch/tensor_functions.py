@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-import minitorch
+import torch
 
 from . import operators
 from .autodiff import Context
@@ -58,8 +58,8 @@ class Function:
         # Create a new variable from the result with a new history.
         back = None
         if need_grad:
-            back = minitorch.History(cls, ctx, vals)
-        return minitorch.Tensor(c._tensor, back, backend=c.backend)
+            back = torch.History(cls, ctx, vals)
+        return torch.Tensor(c._tensor, back, backend=c.backend)
 
 
 class Neg(Function):
@@ -120,7 +120,7 @@ class Sigmoid(Function):
         return part1.f.mul_zip(
             part1,
             sig.f.add_zip(
-                sig.f.neg_map(sig), minitorch.Tensor.make([1], (1,), backend=sig.backend)
+                sig.f.neg_map(sig), torch.Tensor.make([1], (1,), backend=sig.backend)
             ),
         )
 
@@ -168,7 +168,7 @@ class Sum(Function):
         return a.f.add_reduce(a, int(dim.item()))
 
     @staticmethod
-    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         a_shape, dim = ctx.saved_tensors
         return grad_output, grad_output.zeros(grad_output.shape)
 
@@ -230,13 +230,13 @@ class View(Function):
         ctx.save_for_backward(a.shape)
         assert a._tensor.is_contiguous(), "Must be contiguous to view"
         shape2 = [int(shape[i]) for i in range(shape.size)]
-        return minitorch.Tensor.make(a._tensor._storage, tuple(shape2), backend=a.backend)
+        return torch.Tensor.make(a._tensor._storage, tuple(shape2), backend=a.backend)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         (original,) = ctx.saved_values
         return (
-            minitorch.Tensor.make(
+            torch.Tensor.make(
                 grad_output._tensor._storage, original, backend=grad_output.backend
             ),
             0.0,
@@ -286,7 +286,7 @@ def zeros(shape: UserShape, backend: TensorBackend = SimpleBackend) -> Tensor:
         new tensor
 
     """
-    return minitorch.Tensor.make([0] * int(operators.prod(shape)), shape, backend=backend)
+    return torch.Tensor.make([0] * int(operators.prod(shape)), shape, backend=backend)
 
 
 def rand(
@@ -306,7 +306,7 @@ def rand(
 
     """
     vals = [random.random() for _ in range(int(operators.prod(shape)))]
-    tensor = minitorch.Tensor.make(vals, shape, backend=backend)
+    tensor = torch.Tensor.make(vals, shape, backend=backend)
     tensor.requires_grad_(requires_grad)
     return tensor
 
@@ -329,7 +329,7 @@ def _tensor(
         new tensor
 
     """
-    tensor = minitorch.Tensor.make(ls, shape, backend=backend)
+    tensor = torch.Tensor.make(ls, shape, backend=backend)
     tensor.requires_grad_(requires_grad)
     return tensor
 

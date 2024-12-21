@@ -43,10 +43,10 @@ def index_to_position(index: Index, strides: Strides) -> int:
         Position in storage
 
     """
-    pos = 0
-    for i, s in zip(index, strides):
-        pos += i * s
-    return pos
+    position = 0
+    for i, stride in zip(index, strides):
+        position += i * stride
+    return position
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
@@ -61,10 +61,11 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
-    product = 1.0
+    remaining_ord = int(ordinal)
     for i in range(len(shape) - 1, -1, -1):
-        out_index[i] = int(ordinal % (shape[i] * product) // product)
-        product *= shape[i]
+        dim_shape = shape[i]
+        out_index[i] = remaining_ord % dim_shape
+        remaining_ord //= dim_shape
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
@@ -123,11 +124,15 @@ def broadcast_index(big_index: Index, big_shape: Shape, shape: Shape, out_index:
 
     """
     for i in range(len(shape)):
-        offset = len(big_shape) - len(shape) + i
-        out_index[i] = big_index[offset] if shape[i] != 1 else 0
+        if shape[i] > 1:
+            offset = len(big_shape) - len(shape) + i
+            out_index[i] = big_index[offset]
+        else:
+            out_index[i] = 0
 
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
+    """Given a shape of a N-dim tensor, compute its contiguous strides layout."""
     layout = [1]
     offset = 1
     for s in reversed(shape):
@@ -273,6 +278,3 @@ class TensorData:
             else:
                 s += " "
         return s
-
-    def __repr__(self):
-        return f"TensorData(shape={self.shape}, dims={self.dims}, size={self.size}, storage={self._storage})"

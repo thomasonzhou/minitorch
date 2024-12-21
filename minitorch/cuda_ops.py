@@ -26,10 +26,10 @@ FakeCUDAKernel = Any
 # If you get an error, read the docs for NUMBA as to what is allowed
 # in these functions.
 
-Fn = TypeVar("Fn")
+FnCUDA = TypeVar("FnCUDA")
 
 
-def device_jit(fn: Fn) -> Fn:
+def device_jit(fn: FnCUDA) -> FnCUDA:
     return _jit(device=True)(fn)  # type: ignore
 
 
@@ -140,9 +140,6 @@ class CudaOps(TensorOps):
         return out
 
 
-# Implement
-
-
 def tensor_map(
     fn: Callable[[float], float],
 ) -> Callable[[Storage, Shape, Strides, Storage, Shape, Strides], None]:
@@ -236,9 +233,7 @@ def tensor_zip(
 
 
 def _sum_practice(out: Storage, a: Storage, size: int) -> None:
-    """This is a practice sum kernel to prepare for reduce.
-
-    Given an array of length $n$ and out of size $n // \text{blockDIM}$
+    """Given an array of length $n$ and out of size n // blockDIM
     it should sum up each blockDim values into an out cell.
 
     $[a_1, a_2, ..., a_{100}]$
@@ -246,8 +241,6 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     |
 
     $[a_1 +...+ a_{31}, a_{32} + ... + a_{64}, ... ,]$
-
-    Note: Each block must do the sum using shared memory!
 
     Args:
     ----
@@ -480,12 +473,14 @@ def _tensor_matrix_multiply(
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
 
-    I = out_shape[1]
-    J = out_shape[2]
-    K = a_shape[-1]  # the common shape
+    I = out_shape[1]  # first dimension of a
+    J = out_shape[2]  # second dimension of b
+    K = a_shape[-1]  # the common dimension
 
     total = 0.0
-    for k in range(0, K, BLOCK_DIM):
+    for k in range(
+        0, K, BLOCK_DIM
+    ):  # chunk processing into sizes of up to BLOCK_DIM until the common dimension is fully reduced
         if i < I and pj + k < K:
             a_pos = batch * a_batch_stride + i * a_strides[1] + (pj + k) * a_strides[2]
             a_shared[pi, pj] = a_storage[a_pos]
@@ -495,10 +490,15 @@ def _tensor_matrix_multiply(
 
         cuda.syncthreads()
 
-        for pk in range(BLOCK_DIM):
-            if k + pk < K:
-                total += a_shared[pi, pk] * b_shared[pk, pj]
-    if i < I and j < J:
+        for pk in range(BLOCK_DIM):  # reduce over the common dimension
+            if (
+                k + pk < K
+            ):  # the last iteration of the outer loop may not need to load BLOCK_DIM values into memory
+                total += a_shared[pi, pk] * b_shared[pk, pj]  # one element of the dot product
+
+        cuda.syncthreads()  # guard against updating shared memory until all threads are ready
+
+    if i < I and j < J:  # only write to out if in storage indices
         out_pos = batch * out_strides[0] + i * out_strides[1] + j * out_strides[2]
         out[out_pos] = total
 

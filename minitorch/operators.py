@@ -1,36 +1,7 @@
 """Collection of the core mathematical operators used throughout the code base."""
 
 import math
-from typing import Callable
-
-# ## Task 0.1
-
-
-#
-# Implementation of a prelude of elementary functions.
-
-# Mathematical functions:
-# - mul
-# - id
-# - add
-# - neg
-# - lt
-# - eq
-# - max
-# - is_close
-# - sigmoid
-# - relu
-# - log
-# - exp
-# - log_back
-# - inv
-# - inv_back
-# - relu_back
-#
-# For sigmoid calculate as:
-# $f(x) =  \frac{1.0}{(1.0 + e^{-x})}$ if x >=0 else $\frac{e^x}{(1.0 + e^{x})}$
-# For is_close:
-# $f(x) = |x - y| < 1e-2$
+from typing import Callable, Sequence
 
 
 def mul(x: float, y: float) -> float:
@@ -71,7 +42,7 @@ def eq(x: float, y: float) -> float:
 
 def max(x: float, y: float) -> float:
     """Find the max of x and y."""
-    if lt(x, y):
+    if x < y:
         return y
     return x
 
@@ -104,7 +75,7 @@ def inv(x: float) -> float:
 
 def sigmoid(x: float) -> float:
     """Compute the sigmoid of x."""
-    return 1.0/(1.0 + math.exp(-x))
+    return 1.0 / (1.0 + math.exp(-x))
 
 
 def log_back(x: float, deriv: float) -> float:
@@ -114,7 +85,7 @@ def log_back(x: float, deriv: float) -> float:
 
 def inv_back(x: float, deriv: float) -> float:
     """Compute the derivative of inv times a value."""
-    return - deriv / (x ** 2)
+    return -deriv / (x**2)
 
 
 def relu_back(x: float, deriv: float) -> float:
@@ -124,32 +95,17 @@ def relu_back(x: float, deriv: float) -> float:
     return deriv
 
 
-# ## Task 0.3
-
-# Small practice library of elementary higher-order functions.
-
-
-# Implement the following core functions
-# - map
-# - zipWith
-# - reduce
-#
-# Use these to implement
-# - negList : negate a list
-# - addLists : add two lists together
-# - sum: sum lists
-# - prod: take the product of lists
-def map(f: Callable[float, float], l: list) -> list:
+def map(f: Callable[[float], float], l1: list[float]) -> list[float]:
     """Apply a function f to each element of list l."""
-    return [f(val) for val in l]
+    return [f(val) for val in l1]
 
 
-def zipWith(f: Callable[[float, float], float], l1: list, l2: list) -> list:
+def zipWith(f: Callable[[float, float], float], l1: list[float], l2: list[float]) -> list[float]:
     """Apply a function f to combine lists l1 and l2."""
     return [f(val1, val2) for val1, val2 in zip(l1, l2)]
 
 
-def reduce(f: Callable[[float, float], float], l: list) -> float:
+def reduce(f: Callable[[float, float], float], l: Sequence[float]) -> float:
     """Reduce a list l to one value using repeated calls to f."""
     match len(l):
         case 0:
@@ -163,21 +119,21 @@ def reduce(f: Callable[[float, float], float], l: list) -> float:
             return curr
 
 
-def negList(l: list) -> list:
+def negList(l: list[float]) -> list[float]:
     """Negate each element of list l."""
     return map(neg, l)
 
 
-def addLists(l1: list, l2: list) -> list:
+def addLists(l1: list[float], l2: list[float]) -> list[float]:
     """Compute element-wise sum of lists l1 and l2."""
     return zipWith(add, l1, l2)
 
 
-def sum(l: list) -> list:
+def sum(l: list[float]) -> float:
     """Compute the sum of list l."""
     return reduce(add, l)
 
 
-def prod(l: list) -> list:
+def prod(l: Sequence[float]) -> float:
     """Compute the product of list l."""
     return reduce(mul, l)

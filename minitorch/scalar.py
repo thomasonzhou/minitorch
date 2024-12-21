@@ -25,8 +25,7 @@ ScalarLike = Union[float, int, "Scalar"]
 
 @dataclass
 class ScalarHistory:
-    """
-    `ScalarHistory` stores the history of `Function` operations that was
+    """`ScalarHistory` stores the history of `Function` operations that was
     used to construct the current Variable.
 
     Attributes:
@@ -41,15 +40,11 @@ class ScalarHistory:
     inputs: Sequence[Scalar] = ()
 
 
-# ## Task 1.2 and 1.4
-# Scalar Forward and Backward
-
 _var_count = 0
 
 
 class Scalar:
-    """
-    A reimplementation of scalar values for autodifferentiation
+    """A reimplementation of scalar values for autodifferentiation
     tracking. Scalar Variables behave as close as possible to standard
     Python numbers while also tracking the operations that led to the
     number's creation. They can only be manipulated by
@@ -65,7 +60,7 @@ class Scalar:
     def __init__(
         self,
         v: float,
-        back: ScalarHistory = ScalarHistory(),
+        back: ScalarHistory | None = ScalarHistory(),
         name: Optional[str] = None,
     ):
         global _var_count
@@ -82,7 +77,7 @@ class Scalar:
     def __repr__(self) -> str:
         return "Scalar(val: %f, id: %d)" % (self.data, self.unique_id)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.unique_id
 
     def __mul__(self, b: ScalarLike) -> Scalar:
@@ -136,12 +131,12 @@ class Scalar:
     # Variable elements for backprop
 
     def accumulate_derivative(self, x: Any) -> None:
-        """
-        Add `val` to the the derivative accumulated on this variable.
+        """Add `val` to the the derivative accumulated on this variable.
         Should only be called during autodifferentiation on leaf variables.
 
         Args:
             x: value to be accumulated
+
         """
         assert self.is_leaf(), "Only leaf variables can have derivatives."
         if self.derivative is None:
@@ -149,7 +144,7 @@ class Scalar:
         self.derivative += x
 
     def is_leaf(self) -> bool:
-        "True if this variable created by the user (no `last_fn`)"
+        """True if this variable created by the user (no `last_fn`)"""
         return self.history is not None and self.history.last_fn is None
 
     def is_constant(self) -> bool:
@@ -173,12 +168,12 @@ class Scalar:
                 assert var.derivative is None
 
     def backward(self, d_output: Optional[float] = None) -> None:
-        """
-        Calls autodiff to fill in the derivatives for the history of this object.
+        """Calls autodiff to fill in the derivatives for the history of this object.
 
         Args:
             d_output (number, opt): starting derivative to backpropagate through the model
                                    (typically left out, and assumed to be 1.0).
+
         """
         if d_output is None:
             d_output = 1.0
@@ -186,13 +181,14 @@ class Scalar:
 
 
 def derivative_check(f: Any, *scalars: Scalar) -> None:
-    """
-    Checks that autodiff works on a python function.
+    """Checks that autodiff works on a python function.
     Asserts False if derivative is incorrect.
 
-    Parameters:
+    Parameters
+    ----------
         f : function from n-scalars to 1-scalar.
         *scalars  : n input scalar values.
+
     """
     out = f(*scalars)
     out.backward()
