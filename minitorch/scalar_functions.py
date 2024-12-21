@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import torch
+import minitorch
 
 from . import operators
 from .autodiff import Context
@@ -48,11 +48,11 @@ class ScalarFunction:
         raw_vals = []
         scalars = []
         for v in vals:
-            if isinstance(v, torch.scalar.Scalar):
+            if isinstance(v, minitorch.scalar.Scalar):
                 scalars.append(v)
                 raw_vals.append(v.data)
             else:
-                scalars.append(torch.scalar.Scalar(v, back=None))
+                scalars.append(minitorch.scalar.Scalar(v, back=None))
                 raw_vals.append(v)
 
         # Create the context.
@@ -63,8 +63,8 @@ class ScalarFunction:
         assert isinstance(c, float), "Expected return type float got %s" % (type(c))
 
         # Create a new variable from the result with a new history.
-        back = torch.scalar.ScalarHistory(cls, ctx, scalars)
-        return torch.scalar.Scalar(c, back)
+        back = minitorch.scalar.ScalarHistory(cls, ctx, scalars)
+        return minitorch.scalar.Scalar(c, back)
 
 
 class Add(ScalarFunction):

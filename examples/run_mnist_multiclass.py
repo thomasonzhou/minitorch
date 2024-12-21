@@ -15,36 +15,6 @@ C = 10
 H, W = 28, 28
 
 
-def RParam(*shape):
-    """Randomly initialize weights of a given shape"""
-    r = 0.1 * (torch.rand(shape, backend=BACKEND) - 0.5)
-    return torch.Parameter(r)
-
-
-class Linear(torch.Module):
-    def __init__(self, in_size, out_size):
-        super().__init__()
-        self.weights = RParam(in_size, out_size)
-        self.bias = RParam(out_size)
-        self.out_size = out_size
-
-    def forward(self, x):
-        batch, in_size = x.shape
-        return (
-            x.view(batch, in_size) @ self.weights.value.view(in_size, self.out_size)
-        ).view(batch, self.out_size) + self.bias.value
-
-
-class Conv2d(torch.Module):
-    def __init__(self, in_channels, out_channels, kh, kw):
-        super().__init__()
-        self.weights = RParam(out_channels, in_channels, kh, kw)
-        self.bias = RParam(out_channels, 1, 1)
-
-    def forward(self, input):
-        return torch.conv2d(input, self.weights.value) + self.bias.value
-
-
 class Network(torch.Module):
     """
     CNN for MNist classification based on LeNet.
@@ -63,23 +33,22 @@ class Network(torch.Module):
     def __init__(self):
         super().__init__()
 
-        self.conv1 = Conv2d(1, 4, 3, 3)
-        self.conv2 = Conv2d(4, 8, 3, 3)
-
-        self.linear1 = Linear(392, 64)
-        self.linear2 = Linear(64, C)
+        self.conv1 = torch.nn.Conv2d(1, 4, 3, 3)
+        self.conv2 = torch.nn.Conv2d(4, 8, 3, 3)
+        self.linear1 = torch.nn.Linear(392, 64)
+        self.linear2 = torch.nn.Linear(64, C)
 
     def forward(self, x):
 
         x = self.conv1(x).relu()
         x = self.conv2(x).relu()
-        x = torch.avgpool2d(x, (4, 4))
+        x = torch.nn.avgpool2d(x, (4, 4))
         x = x.view(BATCH, 392)
 
         x = self.linear1(x).relu()
-        x = torch.dropout(x, 0.25, ignore=not self.training)
+        x = torch.nn.dropout(x, 0.25, ignore=not self.training)
         x = self.linear2(x)
-        return torch.logsoftmax(x, 1)
+        return torch.nn.logsoftmax(x, 1)
 
 
 def make_mnist(start, stop):

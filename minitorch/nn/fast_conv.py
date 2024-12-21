@@ -4,9 +4,9 @@ import numpy as np
 from numba import prange
 from numba import njit as _njit
 
-from .autodiff import Context
-from .tensor import Tensor
-from .tensor_data import (
+from minitorch.autodiff import Context
+from minitorch.tensor import Tensor
+from minitorch.tensor_data import (
     Index,
     Shape,
     Strides,
@@ -15,7 +15,7 @@ from .tensor_data import (
     index_to_position,
     to_index,
 )
-from .tensor_functions import Function
+from minitorch.tensor_functions import Function
 
 Fn = TypeVar("Fn")
 

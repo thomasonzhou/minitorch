@@ -1,10 +1,10 @@
 from typing import Tuple
 
-from . import operators
-from .autodiff import Context
-from .fast_ops import FastOps
-from .tensor import Tensor
-from .tensor_functions import Function, rand
+from minitorch import operators
+from minitorch.autodiff import Context
+from minitorch.fast_ops import FastOps
+from minitorch.tensor import Tensor
+from minitorch.tensor_functions import Function, rand
 
 
 def tile(input: Tensor, kernel: Tuple[int, int]) -> Tuple[Tensor, int, int]:
