@@ -18,7 +18,6 @@ To install dependencies, create a virtual environment and install the required p
 uv venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
-uv pip install -Ue .
 ```
 
 ## Examples
