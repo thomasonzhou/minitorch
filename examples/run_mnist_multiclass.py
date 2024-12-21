@@ -15,7 +15,7 @@ C = 10
 H, W = 28, 28
 
 
-class Network(torch.Module):
+class Network(torch.nn.Module):
     """
     CNN for MNist classification based on LeNet.
 
@@ -82,7 +82,7 @@ class ImageTrain:
         self.model = Network()
         model = self.model
         n_training_samples = len(X_train)
-        optim = torch.SGD(self.model.parameters(), learning_rate)
+        optim = torch.optim.SGD(self.model.parameters(), learning_rate)
         losses = []
         for epoch in range(1, max_epochs + 1):
             total_loss = 0.0

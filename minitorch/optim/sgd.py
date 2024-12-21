@@ -1,6 +1,6 @@
 from typing import Sequence
 
-from .module import Parameter
+from minitorch.nn import Parameter
 
 
 class Optimizer:
