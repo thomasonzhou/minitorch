@@ -1,4 +1,3 @@
-from .tensor_ops import TensorBackend
-from .fast_ops import FastOps
+from minitorch.backends import get_default_backend
 
-DEFAULT_BACKEND = TensorBackend(FastOps) 
+DEFAULT_BACKEND = get_default_backend()

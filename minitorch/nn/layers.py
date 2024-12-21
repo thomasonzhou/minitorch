@@ -3,13 +3,17 @@ from .fast_conv import conv2d
 from .module import Module, Parameter
 import minitorch
 
+
 def RParam(*shape, device):
     """Randomly initialize weights of a given shape"""
     r = 0.1 * (minitorch.rand(shape, backend=device) - 0.5)
     return Parameter(r)
 
+
 class Linear(Module):
-    def __init__(self, in_features, out_features, bias=True, device=DEFAULT_BACKEND, dtype=None):
+    def __init__(
+        self, in_features, out_features, bias=True, device=DEFAULT_BACKEND, dtype=None
+    ):
         super().__init__()
         self.weights = RParam(in_features, out_features, device=device)
         self.apply_bias = bias
@@ -19,7 +23,8 @@ class Linear(Module):
 
     def forward(self, x):
         batch, in_size = x.shape
-        x =(x.view(batch, in_size) @ self.weights.value.view(in_size, self.out_size)
+        x = (
+            x.view(batch, in_size) @ self.weights.value.view(in_size, self.out_size)
         ).view(batch, self.out_size)
         if self.apply_bias:
             x = x + self.bias.value

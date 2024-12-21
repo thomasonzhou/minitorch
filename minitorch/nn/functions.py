@@ -1,10 +1,9 @@
 from typing import Tuple, Optional
 
-from minitorch import operators
-from minitorch.autodiff import Context
-from minitorch.fast_ops import FastOps
-from minitorch.tensor import Tensor
-from minitorch.tensor_functions import Function, rand
+from minitorch.autograd import Context
+from minitorch._tensor import Tensor
+from minitorch._tensor_functions import Function
+import minitorch
 
 
 def tile(input: Tensor, kernel: Tuple[int, int]) -> Tuple[Tensor, int, int]:
@@ -46,14 +45,11 @@ def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
     return tiled_tensor.mean(4).view(batch, channel, new_height, new_width)
 
 
-max_reduce = FastOps.reduce(operators.max, float("-inf"))
-
-
 def argmax(input: Tensor, dim: int) -> Tensor:
     """Return a 1-hot tensor highlighting the maximum value in a tensor
     Selects the most recent of the maximums if there exist multiple
     """
-    out = max_reduce(input, dim)
+    out = input.f.max_reduce(input, dim)
     return out == input
 
 
@@ -62,7 +58,7 @@ class Max(Function):
     def forward(ctx: Context, t1: Tensor, dim: Tensor) -> Tensor:
         """Reduce to find the maxmimum on each dimension"""
         ctx.save_for_backward(t1, dim)
-        return max_reduce(t1, int(dim.item()))
+        return t1.f.max_reduce(t1, int(dim.item()))
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
@@ -105,5 +101,5 @@ def dropout(t: Tensor, probability: float, ignore: bool = False) -> Tensor:
     assert 0.0 <= probability <= 1.0
     if ignore or probability == 0:
         return t
-    drop = 1.0 * (probability <= rand(t.shape, t.backend))
+    drop = 1.0 * (probability <= minitorch.rand(t.shape, t.backend))
     return t * drop

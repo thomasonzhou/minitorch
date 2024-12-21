@@ -1,15 +1,22 @@
+"""Contains the base class for tensor operations and a slow implementation"""
+
 from __future__ import annotations
 import numpy as np
 from typing import TYPE_CHECKING, Any, Callable, Optional, Type
 
 from typing_extensions import Protocol
 
-from . import operators
-from .tensor_data import shape_broadcast, index_to_position, to_index, broadcast_index
+from minitorch.core import operators
+from minitorch._tensor_helpers import (
+    shape_broadcast,
+    index_to_position,
+    to_index,
+    broadcast_index,
+)
 
 if TYPE_CHECKING:
-    from .tensor import Tensor
-    from .tensor_data import Index, Shape, Storage, Strides
+    from ._tensor import Tensor
+    from minitorch.autograd.tensor_data import Index, Shape, Storage, Strides
 
 
 class MapProto(Protocol):
@@ -79,6 +86,7 @@ class TensorBackend:
         # Reduce
         self.add_reduce = ops.reduce(operators.add, 0.0)
         self.mul_reduce = ops.reduce(operators.mul, 1.0)
+        self.max_reduce = ops.reduce(operators.max, float("-inf"))
         self.matrix_multiply = ops.matrix_multiply
         self.cuda = ops.cuda
 
@@ -109,7 +117,9 @@ class SimpleOps(TensorOps):
         return ret
 
     @staticmethod
-    def zip(fn: Callable[[float, float], float]) -> Callable[["Tensor", "Tensor"], "Tensor"]:
+    def zip(
+        fn: Callable[[float, float], float],
+    ) -> Callable[["Tensor", "Tensor"], "Tensor"]:
         """Higher-order tensor zip function ::
 
         Args:
@@ -167,7 +177,9 @@ class SimpleOps(TensorOps):
     @staticmethod
     def matrix_multiply(a: "Tensor", b: "Tensor") -> "Tensor":
         """Supported in fast_ops and cuda_ops"""
-        raise NotImplementedError("Not implemented in simple backend, see fast_ops or cuda_ops")
+        raise NotImplementedError(
+            "Not implemented in simple backend, see fast_ops or cuda_ops"
+        )
 
     is_cuda = False
 

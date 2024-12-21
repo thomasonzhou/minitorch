@@ -5,7 +5,7 @@ import minitorch as torch
 mndata = MNIST("examples/data/")
 images, labels = mndata.load_training()
 
-BACKEND = torch.TensorBackend(torch.FastOps)
+BACKEND = torch.backends.get_default_backend()
 BATCH = 16
 
 # Number of classes (10 digits)
@@ -39,7 +39,6 @@ class Network(torch.nn.Module):
         self.linear2 = torch.nn.Linear(64, C)
 
     def forward(self, x):
-
         x = self.conv1(x).relu()
         x = self.conv2(x).relu()
         x = torch.nn.avgpool2d(x, (4, 4))
@@ -75,7 +74,13 @@ class ImageTrain:
         return self.model.forward(torch.tensor([x], backend=BACKEND))
 
     def train(
-        self, data_train, data_val, learning_rate, max_epochs=500, log_fn=default_log_fn, batched: bool = False
+        self,
+        data_train,
+        data_val,
+        learning_rate,
+        max_epochs=500,
+        log_fn=default_log_fn,
+        batched: bool = False,
     ):
         (X_train, y_train) = data_train
         (X_val, y_val) = data_val
@@ -101,7 +106,7 @@ class ImageTrain:
                 )
                 x.requires_grad_(True)
                 y.requires_grad_(True)
-                
+
                 out = model.forward(x.view(BATCH, 1, H, W)).view(BATCH, C)
                 prob = (out * y).sum(1)
                 loss = -(prob / y.shape[0]).sum()
@@ -111,7 +116,6 @@ class ImageTrain:
 
                 total_loss += loss[0]
                 losses.append(total_loss)
-
 
                 optim.step()
 

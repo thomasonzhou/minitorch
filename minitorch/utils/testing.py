@@ -2,7 +2,7 @@
 
 from typing import Callable, Generic, Iterable, Tuple, TypeVar
 
-import minitorch.operators as operators
+import minitorch.core.operators as operators
 
 A = TypeVar("A")
 

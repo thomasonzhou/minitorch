@@ -19,12 +19,12 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
-If pip raises an error, it may be necessary to upgrade with:
+This will install minitorch in editable mode.
+
+If pip raises an error, it may be necessary to upgrade before installing dependencies:
 ```python
 pip install --upgrade pip
 ```
-This will also install minitorch in editable mode.
-
 ## Examples
 ### Training a MNIST model
 

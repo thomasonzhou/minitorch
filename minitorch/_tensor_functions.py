@@ -2,22 +2,32 @@
 
 from __future__ import annotations
 
-import random
 from typing import TYPE_CHECKING
 
 import numpy as np
+from dataclasses import dataclass
 
 import minitorch
 
-from . import operators
-from .autodiff import Context
-from .tensor_ops import SimpleBackend, TensorBackend
+from minitorch.core import operators
+from minitorch.autograd import Context
+from minitorch._ops import SimpleBackend, TensorBackend
 
 if TYPE_CHECKING:
+    from minitorch._tensor import Tensor
     from typing import Any, List, Tuple
-
-    from .tensor import Tensor
     from .tensor_data import UserIndex, UserShape
+
+
+@dataclass
+class History:
+    """`History` stores the history of `Function` operations that was
+    used to construct the current Variable.
+    """
+
+    last_fn: Optional[Type[Function]] = None
+    ctx: Optional[Context] = None
+    inputs: Sequence[Tensor] = ()
 
 
 def wrap_tuple(x):  # type: ignore
@@ -58,8 +68,8 @@ class Function:
         # Create a new variable from the result with a new history.
         back = None
         if need_grad:
-            back = minitorch.History(cls, ctx, vals)
-        return minitorch.Tensor(c._tensor, back, backend=c.backend)
+            back = History(cls, ctx, vals)
+        return minitorch._tensor.Tensor(c._tensor, back, backend=c.backend)
 
 
 class Neg(Function):
@@ -103,7 +113,9 @@ class Mul(Function):
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         (a, b) = ctx.saved_tensors
-        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(a, grad_output)
+        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(
+            a, grad_output
+        )
 
 
 class Sigmoid(Function):
@@ -120,7 +132,8 @@ class Sigmoid(Function):
         return part1.f.mul_zip(
             part1,
             sig.f.add_zip(
-                sig.f.neg_map(sig), minitorch.Tensor.make([1], (1,), backend=sig.backend)
+                sig.f.neg_map(sig),
+                minitorch.Tensor.make([1], (1,), backend=sig.backend),
             ),
         )
 
@@ -189,7 +202,9 @@ class LT(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
+        return grad_output.zeros(grad_output.shape), grad_output.zeros(
+            grad_output.shape
+        )
 
 
 class EQ(Function):
@@ -199,7 +214,9 @@ class EQ(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
+        return grad_output.zeros(grad_output.shape), grad_output.zeros(
+            grad_output.shape
+        )
 
 
 class IsClose(Function):
@@ -230,13 +247,13 @@ class View(Function):
         ctx.save_for_backward(a.shape)
         assert a._tensor.is_contiguous(), "Must be contiguous to view"
         shape2 = [int(shape[i]) for i in range(shape.size)]
-        return minitorch.Tensor.make(a._tensor._storage, tuple(shape2), backend=a.backend)
+        return a.make(a._tensor._storage, tuple(shape2), backend=a.backend)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         (original,) = ctx.saved_values
         return (
-            minitorch.Tensor.make(
+            grad_output.make(
                 grad_output._tensor._storage, original, backend=grad_output.backend
             ),
             0.0,
@@ -271,141 +288,4 @@ class MatMul(Function):
         return (
             grad_output.f.matrix_multiply(grad_output, transpose(t2)),
             grad_output.f.matrix_multiply(transpose(t1), grad_output),
-        )
-
-
-# Helpers for Constructing tensors
-def zeros(shape: UserShape, backend: TensorBackend = SimpleBackend) -> Tensor:
-    """Produce a zero tensor of size `shape`.
-
-    Args:
-        shape : shape of tensor
-        backend : tensor backend
-
-    Returns:
-        new tensor
-
-    """
-    return minitorch.Tensor.make([0] * int(operators.prod(shape)), shape, backend=backend)
-
-
-def rand(
-    shape: UserShape,
-    backend: TensorBackend = SimpleBackend,
-    requires_grad: bool = False,
-) -> Tensor:
-    """Produce a random tensor of size `shape`.
-
-    Args:
-        shape : shape of tensor
-        backend : tensor backend
-        requires_grad : turn on autodifferentiation
-
-    Returns:
-        :class:`Tensor` : new tensor
-
-    """
-    vals = [random.random() for _ in range(int(operators.prod(shape)))]
-    tensor = minitorch.Tensor.make(vals, shape, backend=backend)
-    tensor.requires_grad_(requires_grad)
-    return tensor
-
-
-def _tensor(
-    ls: Any,
-    shape: UserShape,
-    backend: TensorBackend = SimpleBackend,
-    requires_grad: bool = False,
-) -> Tensor:
-    """Produce a tensor with data ls and shape `shape`.
-
-    Args:
-        ls: data for tensor
-        shape: shape of tensor
-        backend: tensor backend
-        requires_grad: turn on autodifferentiation
-
-    Returns:
-        new tensor
-
-    """
-    tensor = minitorch.Tensor.make(ls, shape, backend=backend)
-    tensor.requires_grad_(requires_grad)
-    return tensor
-
-
-def tensor(ls: Any, backend: TensorBackend = SimpleBackend, requires_grad: bool = False) -> Tensor:
-    """Produce a tensor with data and shape from ls
-
-    Args:
-        ls: data for tensor
-        backend : tensor backend
-        requires_grad : turn on autodifferentiation
-
-    Returns:
-        :class:`Tensor` : new tensor
-
-    """
-
-    def shape(ls: Any) -> List[int]:
-        if isinstance(ls, (list, tuple)):
-            return [len(ls)] + shape(ls[0])
-        else:
-            return []
-
-    def flatten(ls: Any) -> List[float]:
-        if isinstance(ls, (list, tuple)):
-            return [y for x in ls for y in flatten(x)]
-        else:
-            return [ls]
-
-    cur = flatten(ls)
-    shape2 = shape(ls)
-    return _tensor(cur, tuple(shape2), backend=backend, requires_grad=requires_grad)
-
-
-# Gradient check for tensors
-
-
-def grad_central_difference(
-    f: Any, *vals: Tensor, arg: int = 0, epsilon: float = 1e-6, ind: UserIndex
-) -> float:
-    x = vals[arg]
-    up = zeros(x.shape)
-    up[ind] = epsilon
-    vals1 = [x if j != arg else x + up for j, x in enumerate(vals)]
-    vals2 = [x if j != arg else x - up for j, x in enumerate(vals)]
-    delta: Tensor = f(*vals1).sum() - f(*vals2).sum()
-
-    return delta[0] / (2.0 * epsilon)
-
-
-def grad_check(f: Any, *vals: Tensor) -> None:
-    for x in vals:
-        x.requires_grad_(True)
-        x.zero_grad_()
-    random.seed(10)
-    out = f(*vals)
-    out.sum().backward()
-    err_msg = """
-
-Gradient check error for function %s.
-
-Input %s
-
-Received derivative %f for argument %d and index %s,
-but was expecting derivative %f from central difference.
-
-"""
-
-    for i, x in enumerate(vals):
-        ind = x._tensor.sample()
-        check = grad_central_difference(f, *vals, arg=i, ind=ind)
-        assert x.grad is not None
-        np.testing.assert_allclose(
-            x.grad[ind],
-            check,
-            1e-2,
-            1e-2,
-            err_msg=err_msg % (f, vals, x.grad[ind], i, ind, check),
         )

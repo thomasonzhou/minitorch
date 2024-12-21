@@ -5,7 +5,7 @@ from typing import Any, Iterable, Optional, Sequence, Tuple, Type, Union
 
 import numpy as np
 
-from .autodiff import Context, Variable, backpropagate, central_difference
+from minitorch.autograd import Context, Variable, backpropagate, central_difference
 from .scalar_functions import (
     EQ,
     LT,
@@ -162,7 +162,9 @@ class Scalar:
         assert h.ctx is not None
 
         for var, deriv in zip(h.inputs, h.last_fn._backward(h.ctx, d_output)):
-            if not var.is_constant():  # filter out constants, which have a derivative of zero
+            if (
+                not var.is_constant()
+            ):  # filter out constants, which have a derivative of zero
                 yield var, deriv
             else:
                 assert var.derivative is None
@@ -205,5 +207,6 @@ but was expecting derivative f'=%f from central difference."""
             check.data,
             1e-2,
             1e-2,
-            err_msg=err_msg % (str([x.data for x in scalars]), x.derivative, i, check.data),
+            err_msg=err_msg
+            % (str([x.data for x in scalars]), x.derivative, i, check.data),
         )

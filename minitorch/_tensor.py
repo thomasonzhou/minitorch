@@ -1,16 +1,15 @@
 """Implementation of the core Tensor object for autodifferentiation."""
 
 from __future__ import annotations
-
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
+from numpy import array
+import random
 
-from . import operators
-from .autodiff import Context, Variable, backpropagate
-from .tensor_data import TensorData
-from .tensor_functions import (
+from minitorch.core import operators
+from minitorch.autograd import Context, Variable, backpropagate
+from ._tensor_functions import (
     EQ,
     LT,
     Add,
@@ -28,8 +27,10 @@ from .tensor_functions import (
     Sigmoid,
     Sum,
     View,
-    tensor,
 )
+from ._ops import SimpleBackend
+from ._tensor_helpers import strides_from_shape, index_to_position, shape_broadcast
+from ._tensor_functions import History
 
 if TYPE_CHECKING:
     from typing import Any, Iterable, List, Optional, Sequence, Tuple, Type, Union
@@ -43,15 +44,143 @@ if TYPE_CHECKING:
     TensorLike = Union[float, int, "Tensor"]
 
 
-@dataclass
-class History:
-    """`History` stores the history of `Function` operations that was
-    used to construct the current Variable.
-    """
+class TensorData:
+    _storage: Storage
+    _strides: Strides
+    _shape: Shape
+    strides: UserStrides
+    shape: UserShape
+    dims: int
 
-    last_fn: Optional[Type[Function]] = None
-    ctx: Optional[Context] = None
-    inputs: Sequence[Tensor] = ()
+    def __init__(
+        self,
+        storage: Union[Sequence[float], Storage],
+        shape: UserShape,
+        strides: Optional[UserStrides] = None,
+    ):
+        if isinstance(storage, np.ndarray):
+            self._storage = storage
+        else:
+            self._storage = array(storage, dtype=np.float64)
+
+        if strides is None:
+            strides = strides_from_shape(shape)
+
+        assert isinstance(strides, tuple), "Strides must be tuple"
+        assert isinstance(shape, tuple), "Shape must be tuple"
+        if len(strides) != len(shape):
+            raise IndexingError(f"Len of strides {strides} must match {shape}.")
+        self._strides = array(strides)
+        self._shape = array(shape)
+        self.strides = strides
+        self.dims = len(strides)
+        self.size = int(operators.prod(shape))
+        self.shape = shape
+        assert len(self._storage) == self.size
+
+    def to_cuda_(self) -> None:  # pragma: no cover
+        if not numba.cuda.is_cuda_array(self._storage):
+            self._storage = numba.cuda.to_device(self._storage)
+
+    def is_contiguous(self) -> bool:
+        """Check that the layout is contiguous, i.e. outer dimensions have bigger strides than inner dimensions.
+
+        Returns:
+            bool : True if contiguous
+
+        """
+        last = 1e9
+        for stride in self._strides:
+            if stride > last:
+                return False
+            last = stride
+        return True
+
+    @staticmethod
+    def shape_broadcast(shape_a: UserShape, shape_b: UserShape) -> UserShape:
+        return shape_broadcast(shape_a, shape_b)
+
+    def index(self, index: Union[int, UserIndex]) -> int:
+        if isinstance(index, int):
+            aindex: Index = array([index])
+        if isinstance(index, tuple):
+            aindex = array(index)
+
+        # Check for errors
+        if aindex.shape[0] != len(self.shape):
+            raise IndexingError(f"Index {aindex} must be size of {self.shape}.")
+        for i, ind in enumerate(aindex):
+            if ind >= self.shape[i]:
+                raise IndexingError(f"Index {aindex} out of range {self.shape}.")
+            if ind < 0:
+                raise IndexingError(f"Negative indexing for {aindex} not supported.")
+
+        # Call fast indexing.
+        return index_to_position(array(index), self._strides)
+
+    def indices(self) -> Iterable[UserIndex]:
+        lshape: Shape = array(self.shape)
+        out_index: Index = array(self.shape)
+        for i in range(self.size):
+            to_index(i, lshape, out_index)
+            yield tuple(out_index)
+
+    def sample(self) -> UserIndex:
+        return tuple((random.randint(0, s - 1) for s in self.shape))
+
+    def get(self, key: UserIndex) -> float:
+        x: float = self._storage[self.index(key)]
+        return x
+
+    def set(self, key: UserIndex, val: float) -> None:
+        self._storage[self.index(key)] = val
+
+    def tuple(self) -> Tuple[Storage, Shape, Strides]:
+        return (self._storage, self._shape, self._strides)
+
+    def permute(self, *order: int) -> TensorData:
+        """Permute the dimensions of the tensor.
+
+        Args:
+            order (list): a permutation of the dimensions
+
+        Returns:
+            New `TensorData` with the same storage and a new dimension order.
+
+        """
+        assert list(sorted(order)) == list(
+            range(len(self.shape))
+        ), f"Must give a position to each dimension. Shape: {self.shape} Order: {order}"
+
+        return TensorData(
+            storage=self._storage,
+            shape=tuple(self.shape[i] for i in order),
+            strides=tuple(self.strides[i] for i in order),
+        )
+
+    def to_string(self) -> str:
+        s = ""
+        for index in self.indices():
+            l = ""
+            for i in range(len(index) - 1, -1, -1):
+                if index[i] == 0:
+                    l = "\n%s[" % ("\t" * i) + l
+                else:
+                    break
+            s += l
+            v = self.get(index)
+            s += f"{v:3.2f}"
+            l = ""
+            for i in range(len(index) - 1, -1, -1):
+                if index[i] == self.shape[i] - 1:
+                    l += "]"
+                else:
+                    break
+            if l:
+                s += l
+            else:
+                s += " "
+        return s
 
 
 _tensor_count = 0
@@ -371,3 +500,140 @@ class Tensor:
     def zero_grad_(self) -> None:  # pragma: no cover
         """Reset the derivative on this variable."""
         self.grad = None
+
+
+# Helpers for Constructing tensors
+def zeros(shape: UserShape, backend: TensorBackend = SimpleBackend) -> Tensor:
+    """Produce a zero tensor of size `shape`.
+
+    Args:
+        shape : shape of tensor
+        backend : tensor backend
+
+    Returns:
+        new tensor
+
+    """
+    return Tensor.make([0] * int(operators.prod(shape)), shape, backend=backend)
+
+
+def rand(
+    shape: UserShape,
+    backend: TensorBackend = SimpleBackend,
+    requires_grad: bool = False,
+) -> Tensor:
+    """Produce a random tensor of size `shape`.
+
+    Args:
+        shape : shape of tensor
+        backend : tensor backend
+        requires_grad : turn on autodifferentiation
+
+    Returns:
+        :class:`Tensor` : new tensor
+
+    """
+    vals = [random.random() for _ in range(int(operators.prod(shape)))]
+    tensor = Tensor.make(vals, shape, backend=backend)
+    tensor.requires_grad_(requires_grad)
+    return tensor
+
+
+def _tensor(
+    ls: Any,
+    shape: UserShape,
+    backend: TensorBackend = SimpleBackend,
+    requires_grad: bool = False,
+) -> Tensor:
+    """Produce a tensor with data ls and shape `shape`.
+
+    Args:
+        ls: data for tensor
+        shape: shape of tensor
+        backend: tensor backend
+        requires_grad: turn on autodifferentiation
+
+    Returns:
+        new tensor
+
+    """
+    tensor = Tensor.make(ls, shape, backend=backend)
+    tensor.requires_grad_(requires_grad)
+    return tensor
+
+
+def tensor(ls: Any, backend: TensorBackend = SimpleBackend, requires_grad: bool = False) -> Tensor:
+    """Produce a tensor with data and shape from ls
+
+    Args:
+        ls: data for tensor
+        backend : tensor backend
+        requires_grad : turn on autodifferentiation
+
+    Returns:
+        :class:`Tensor` : new tensor
+
+    """
+
+    def shape(ls: Any) -> List[int]:
+        if isinstance(ls, (list, tuple)):
+            return [len(ls)] + shape(ls[0])
+        else:
+            return []
+
+    def flatten(ls: Any) -> List[float]:
+        if isinstance(ls, (list, tuple)):
+            return [y for x in ls for y in flatten(x)]
+        else:
+            return [ls]
+
+    cur = flatten(ls)
+    shape2 = shape(ls)
+    return _tensor(cur, tuple(shape2), backend=backend, requires_grad=requires_grad)
+
+
+# Gradient check for tensors
+
+
+def grad_central_difference(
+    f: Any, *vals: Tensor, arg: int = 0, epsilon: float = 1e-6, ind: UserIndex
+) -> float:
+    x = vals[arg]
+    up = zeros(x.shape)
+    up[ind] = epsilon
+    vals1 = [x if j != arg else x + up for j, x in enumerate(vals)]
+    vals2 = [x if j != arg else x - up for j, x in enumerate(vals)]
+    delta: Tensor = f(*vals1).sum() - f(*vals2).sum()
+
+    return delta[0] / (2.0 * epsilon)
+
+
+def grad_check(f: Any, *vals: Tensor) -> None:
+    for x in vals:
+        x.requires_grad_(True)
+        x.zero_grad_()
+    random.seed(10)
+    out = f(*vals)
+    out.sum().backward()
+    err_msg = """
+
+Gradient check error for function %s.
+
+Input %s
+
+Received derivative %f for argument %d and index %s,
+but was expecting derivative %f from central difference.
+
+"""
+
+    for i, x in enumerate(vals):
+        ind = x._tensor.sample()
+        check = grad_central_difference(f, *vals, arg=i, ind=ind)
+        assert x.grad is not None
+        np.testing.assert_allclose(
+            x.grad[ind],
+            check,
+            1e-2,
+            1e-2,
+            err_msg=err_msg % (f, vals, x.grad[ind], i, ind, check),
+        )

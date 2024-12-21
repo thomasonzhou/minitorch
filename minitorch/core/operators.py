@@ -100,7 +100,9 @@ def map(f: Callable[[float], float], l1: list[float]) -> list[float]:
     return [f(val) for val in l1]
 
 
-def zipWith(f: Callable[[float, float], float], l1: list[float], l2: list[float]) -> list[float]:
+def zipWith(
+    f: Callable[[float, float], float], l1: list[float], l2: list[float]
+) -> list[float]:
     """Apply a function f to combine lists l1 and l2."""
     return [f(val1, val2) for val1, val2 in zip(l1, l2)]
 
@@ -109,7 +111,7 @@ def reduce(f: Callable[[float, float], float], l: Sequence[float]) -> float:
     """Reduce a list l to one value using repeated calls to f."""
     if len(l) == 0:
         return 0
-    
+
     curr = l[0]
     for idx in range(1, len(l)):
         curr = f(curr, l[idx])

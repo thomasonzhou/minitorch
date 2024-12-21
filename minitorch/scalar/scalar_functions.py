@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import minitorch
 
 from . import operators
-from .autodiff import Context
+from minitorch.autograd import Context
 
 if TYPE_CHECKING:
     from typing import Tuple, Any
