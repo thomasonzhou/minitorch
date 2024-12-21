@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 from minitorch import operators
 from minitorch.autodiff import Context
@@ -74,7 +74,7 @@ class Max(Function):
         return grad_output * argmax(t1, int(dim.item())), grad_output.zeros(grad_output.shape)
 
 
-def max(t: Tensor, dim: int | None = None) -> Tensor:
+def max(t: Tensor, dim: Optional[int] = None) -> Tensor:
     """Compute the maximum along a given axis"""
     if dim is None:
         return Max.apply(t.contiguous().view(t.size), t._ensure_tensor(0))

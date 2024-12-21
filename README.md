@@ -15,10 +15,15 @@ This is an reimplementation of the PyTorch API. It supports the following:
 
 To install dependencies, create a virtual environment and install the required packages:
 ```python
-uv venv
+python3 -m venv .venv
 source .venv/bin/activate
-uv pip install -r requirements.txt
+pip install -r requirements.txt
 ```
+If pip raises an error, it may be necessary to upgrade with:
+```python
+pip install --upgrade pip
+```
+This will also install minitorch in editable mode.
 
 ## Examples
 ### Training a MNIST model
