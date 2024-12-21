@@ -11,8 +11,6 @@ This is an reimplementation of the PyTorch API. It supports the following:
 
 # Getting started
 
-## Using [uv](https://github.com/astral-sh/uv)
-
 To install dependencies, create a virtual environment and install the required packages:
 ```python
 python3 -m venv .venv
