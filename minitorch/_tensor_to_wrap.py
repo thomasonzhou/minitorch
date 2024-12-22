@@ -1,3 +1,5 @@
+"""To be wrapped by the default backend at initiation time"""
+
 from minitorch._tensor import Tensor
 import minitorch.core.operators as operators
 import random
