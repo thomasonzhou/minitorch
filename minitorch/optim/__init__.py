@@ -1,1 +1,1 @@
-from .sgd import SGD
+from .sgd import SGD  # noqa: F401

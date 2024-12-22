@@ -1,4 +1,4 @@
-from typing import Tuple, TypeVar, Any, TYPE_CHECKING
+from typing import Tuple, TypeVar, Any  # noqa: F401
 
 import numpy as np
 from numba import prange

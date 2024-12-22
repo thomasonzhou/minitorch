@@ -1,7 +1,17 @@
 from minitorch._ops import TensorOps, MapProto, TensorBackend
 from minitorch._tensor import Tensor
 from typing import Callable, Optional, Any
-from minitorch._tensor_helpers import Storage, Shape, Strides
+import numpy as np
+from minitorch._tensor_helpers import (
+    Storage,
+    Shape,
+    Strides,
+    Index,
+    to_index,
+    broadcast_index,
+    index_to_position,
+    shape_broadcast,
+)
 
 
 class SimpleOps(TensorOps):
@@ -90,7 +100,9 @@ class SimpleOps(TensorOps):
     @staticmethod
     def matrix_multiply(a: "Tensor", b: "Tensor") -> "Tensor":
         """Supported in fast_ops and cuda_ops"""
-        raise NotImplementedError("Not implemented in simple backend, see fast_ops or cuda_ops")
+        raise NotImplementedError(
+            "Not implemented in simple backend, see fast_ops or cuda_ops"
+        )
 
     is_cuda = False
 

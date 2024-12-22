@@ -13,7 +13,7 @@ from minitorch.autograd import Context
 
 if TYPE_CHECKING:
     from minitorch._tensor import Tensor
-    from typing import Tuple
+    from typing import Tuple, Optional, Sequence, Type
 
 
 @dataclass
@@ -110,7 +110,9 @@ class Mul(Function):
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         (a, b) = ctx.saved_tensors
-        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(a, grad_output)
+        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(
+            a, grad_output
+        )
 
 
 class Sigmoid(Function):
@@ -128,7 +130,7 @@ class Sigmoid(Function):
             part1,
             sig.f.add_zip(
                 sig.f.neg_map(sig),
-                minitorch.Tensor.make([1], (1,), device=sig.backend),
+                grad_output.make([1], (1,), device=sig.backend),
             ),
         )
 
@@ -197,7 +199,9 @@ class LT(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
+        return grad_output.zeros(grad_output.shape), grad_output.zeros(
+            grad_output.shape
+        )
 
 
 class EQ(Function):
@@ -207,7 +211,9 @@ class EQ(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
+        return grad_output.zeros(grad_output.shape), grad_output.zeros(
+            grad_output.shape
+        )
 
 
 class IsClose(Function):
@@ -244,7 +250,9 @@ class View(Function):
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         (original,) = ctx.saved_values
         return (
-            grad_output.make(grad_output._tensor._storage, original, device=grad_output.device),
+            grad_output.make(
+                grad_output._tensor._storage, original, device=grad_output.device
+            ),
             0.0,
         )
 

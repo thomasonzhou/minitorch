@@ -1,6 +1,6 @@
-from .module import Module, Parameter
-from .conv import Conv1d, Conv2d
-from .linear import Linear
-from .pooling import MaxPool2d, AvgPool2d
-from .activation import ReLU, Sigmoid, SoftMax
-from .dropout import Dropout
+from .module import Module, Parameter  # noqa: F401r
+from .conv import Conv1d, Conv2d  # noqa: F401
+from .linear import Linear  # noqa: F401
+from .pooling import MaxPool2d, AvgPool2d  # noqa: F401
+from .activation import ReLU, Sigmoid, SoftMax  # noqa: F401
+from .dropout import Dropout  # noqa: F401

@@ -1,15 +1,11 @@
 from __future__ import annotations
 
-import random
-from typing import Iterable, Optional, Sequence, Tuple, Union
+from typing import Sequence
 
-import numba
 import numpy as np
 import numpy.typing as npt
-from numpy import array, float64
 from typing_extensions import TypeAlias
 
-from minitorch.core.operators import prod
 
 MAX_DIMS = 32
 

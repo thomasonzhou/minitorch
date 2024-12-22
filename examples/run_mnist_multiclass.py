@@ -94,11 +94,17 @@ class ImageTrain:
             total_loss = 0.0
 
             model.train()
-            for batch_num, example_num in enumerate(range(0, n_training_samples, BATCH)):
+            for batch_num, example_num in enumerate(
+                range(0, n_training_samples, BATCH)
+            ):
                 if n_training_samples - example_num <= BATCH:
                     continue
-                y = torch.tensor(y_train[example_num : example_num + BATCH], device=BACKEND)
-                x = torch.tensor(X_train[example_num : example_num + BATCH], device=BACKEND)
+                y = torch.tensor(
+                    y_train[example_num : example_num + BATCH], device=BACKEND
+                )
+                x = torch.tensor(
+                    X_train[example_num : example_num + BATCH], device=BACKEND
+                )
                 x.requires_grad_(True)
                 y.requires_grad_(True)
 

@@ -15,9 +15,9 @@ class Linear(Module):
 
     def forward(self, x):
         batch, in_size = x.shape
-        x = (x.view(batch, in_size) @ self.weights.value.view(in_size, self.out_size)).view(
-            batch, self.out_size
-        )
+        x = (
+            x.view(batch, in_size) @ self.weights.value.view(in_size, self.out_size)
+        ).view(batch, self.out_size)
         if self.apply_bias:
             x = x + self.bias.value
         return x

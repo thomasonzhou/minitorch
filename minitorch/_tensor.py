@@ -9,6 +9,10 @@ from numpy import array
 from minitorch.core import operators
 from minitorch.autograd import Variable, backpropagate
 import minitorch
+from minitorch._tensor_helpers import IndexingError, Index, to_index
+import random
+import numba
+
 from ._tensor_functions import (
     EQ,
     LT,
@@ -356,11 +360,11 @@ class Tensor:
 
     def permute(self, *order: int) -> Tensor:
         """Permute tensor dimensions to *order"""
-        return Permute.apply(self, minitorch.tensor(list(order)))
+        return Permute.apply(self, minitorch.tensor(list(order), self.device))
 
     def view(self, *shape: int) -> Tensor:
         """Change the shape of the tensor to a new shape with the same size"""
-        return View.apply(self, minitorch.tensor(list(shape)))
+        return View.apply(self, minitorch.tensor(list(shape), self.device))
 
     def contiguous(self) -> Tensor:
         """Return a contiguous tensor with the same data"""
@@ -435,7 +439,9 @@ class Tensor:
 
     def zeros(self, shape: Optional[UserShape] = None) -> Tensor:
         def zero(shape: UserShape) -> Tensor:
-            return Tensor.make([0.0] * int(operators.prod(shape)), shape, device=self.device)
+            return Tensor.make(
+                [0.0] * int(operators.prod(shape)), shape, device=self.device
+            )
 
         if shape is None:
             out = zero(self.shape)
@@ -487,7 +493,10 @@ class Tensor:
 
         x = h.last_fn._backward(h.ctx, d_output)
         assert len(x) == len(h.inputs), f"Bug in function {h.last_fn}"
-        return [(inp, inp.expand(self._ensure_tensor(d_in))) for inp, d_in in zip(h.inputs, x)]
+        return [
+            (inp, inp.expand(self._ensure_tensor(d_in)))
+            for inp, d_in in zip(h.inputs, x)
+        ]
 
     def backward(self, grad_output: Optional[Tensor] = None) -> None:
         if grad_output is None:
@@ -507,7 +516,7 @@ def grad_central_difference(
     f: Any, *vals: Tensor, arg: int = 0, epsilon: float = 1e-6, ind: UserIndex
 ) -> float:
     x = vals[arg]
-    up = zeros(x.shape)
+    up = minitorch.zeros(x.shape)
     up[ind] = epsilon
     vals1 = [x if j != arg else x + up for j, x in enumerate(vals)]
     vals2 = [x if j != arg else x - up for j, x in enumerate(vals)]

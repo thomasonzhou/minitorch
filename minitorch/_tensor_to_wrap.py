@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 # Helpers for Constructing tensors
-def zeros(shape: UserShape, device) -> Tensor:
+def zeros(shape: UserShape, device=None) -> Tensor:
     """Produce a zero tensor of size `shape`.
 
     Args:

@@ -16,7 +16,6 @@ from minitorch._ops import MapProto, TensorOps
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
-
     from .tensor import Tensor
     from minitorch.autograd.tensor_data import Index, Shape, Storage, Strides
 
@@ -80,7 +79,7 @@ class FastOps(TensorOps):
             out = a.zeros(tuple(out_shape))
             out._tensor._storage[:] = start
 
-            f(*out.tuple(), *a.tuple(), dim)
+            f(*out.tuple(), *a.tuple(), dim)  # type: ignore[call-arg]
             return out
 
         return ret
