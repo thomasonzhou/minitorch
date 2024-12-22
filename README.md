@@ -33,6 +33,8 @@ python project/run_mnist_multiclass.py
 A list of supported modules and functions are listed in examples/custom.py.
 
 # Further extensions
+
+## Features
 - [ ] Saving and loading torch state dictionaries
 - [ ] Transformer module
   - [ ] tanh, gelu
@@ -41,6 +43,13 @@ A list of supported modules and functions are listed in examples/custom.py.
   - [ ] arange, cat, stack, hstack
 - [ ] ADAM optimizer
 - [ ] Additional loss functions
+
+## Optimizations
+- [ ] Bindings
+- [ ] CUDA Convolution
+
+## Documentation
+- [ ] CUDA usage with Google Collab
 
 # Credit
 

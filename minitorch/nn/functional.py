@@ -3,6 +3,7 @@ from typing import Tuple, Optional
 from minitorch.autograd import Context
 from minitorch._tensor import Tensor
 from minitorch._tensor_functions import Function
+import minitorch
 
 
 def tile(input: Tensor, kernel: Tuple[int, int]) -> Tuple[Tensor, int, int]:

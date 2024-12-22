@@ -1,5 +1,5 @@
 from .module import Module
-from minitorch.nn.functions import maxpool2d, avgpool2d
+from minitorch.nn.functional import maxpool2d, avgpool2d
 
 
 class _MaxPoolNd(Module):

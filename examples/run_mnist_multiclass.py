@@ -37,6 +37,7 @@ class Network(torch.nn.Module):
         self.conv2 = torch.nn.Conv2d(4, 8, 3, 3)
         self.linear1 = torch.nn.Linear(392, 64)
         self.linear2 = torch.nn.Linear(64, C)
+        self.dropout = torch.nn.Dropout(0.25)
 
     def forward(self, x):
         x = self.conv1(x).relu()
@@ -45,7 +46,7 @@ class Network(torch.nn.Module):
         x = x.view(BATCH, 392)
 
         x = self.linear1(x).relu()
-        x = torch.nn.dropout(x, 0.25, ignore=not self.training)
+        x = self.dropout(x)
         x = self.linear2(x)
         return torch.nn.logsoftmax(x, 1)
 
