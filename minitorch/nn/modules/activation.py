@@ -19,3 +19,13 @@ def ReLU(Module):
 def Sigmoid(Module):
     def forward(self, x):
         return x.sigmoid()
+
+
+def Tanh(Module):
+    def forward(self, x):
+        return x.tanh()
+
+
+def GeLU(Module):
+    def forward(self, x):
+        return x.gelu()

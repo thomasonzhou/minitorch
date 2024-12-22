@@ -110,9 +110,7 @@ class Mul(Function):
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         (a, b) = ctx.saved_tensors
-        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(
-            a, grad_output
-        )
+        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(a, grad_output)
 
 
 class Sigmoid(Function):
@@ -145,6 +143,30 @@ class ReLU(Function):
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
         (t1,) = ctx.saved_tensors
         return grad_output.f.relu_back_zip(t1, grad_output)
+
+
+class Tanh(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor) -> Tensor:
+        ctx.save_for_backward(t1)
+        return t1.f.tanh_map(t1)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        (t1,) = ctx.saved_tensors
+        return grad_output.f.tanh_back_zip(t1, grad_output)
+
+
+class GeLU(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor) -> Tensor:
+        ctx.save_for_backward(t1)
+        return t1.f.gelu_map(t1)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        (t1,) = ctx.saved_tensors
+        return grad_output.f.gelu_back_zip(t1, grad_output)
 
 
 class Log(Function):
@@ -199,9 +221,7 @@ class LT(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return grad_output.zeros(grad_output.shape), grad_output.zeros(
-            grad_output.shape
-        )
+        return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
 
 
 class EQ(Function):
@@ -211,9 +231,7 @@ class EQ(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return grad_output.zeros(grad_output.shape), grad_output.zeros(
-            grad_output.shape
-        )
+        return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
 
 
 class IsClose(Function):
@@ -250,9 +268,7 @@ class View(Function):
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         (original,) = ctx.saved_values
         return (
-            grad_output.make(
-                grad_output._tensor._storage, original, device=grad_output.device
-            ),
+            grad_output.make(grad_output._tensor._storage, original, device=grad_output.device),
             0.0,
         )
 

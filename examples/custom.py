@@ -20,5 +20,7 @@ nn.Dropout()
 nn.ReLU()
 nn.Sigmoid()
 nn.SoftMax()
+nn.Tanh()
+nn.GeLU()
 
 torch.optim.SGD()

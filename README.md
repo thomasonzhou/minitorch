@@ -37,7 +37,7 @@ A list of supported modules and functions are listed in examples/custom.py.
 ## Features
 - [ ] Saving and loading torch state dictionaries
 - [ ] Transformer module
-  - [ ] tanh, gelu
+  - [x] tanh, GeLU
 - [ ] Embedding module
 - [ ] Expand core tensor operations
   - [ ] arange, cat, stack, hstack

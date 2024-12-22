@@ -28,6 +28,8 @@ from ._tensor_functions import (
     Neg,
     Permute,
     ReLU,
+    Tanh,
+    GeLU,
     Sigmoid,
     Sum,
     View,
@@ -340,6 +342,12 @@ class Tensor:
     def exp(self) -> Tensor:
         return Exp.apply(self)
 
+    def tanh(self) -> Tensor:
+        return Tanh.apply(self)
+
+    def gelu(self) -> Tensor:
+        return GeLU.apply(self)
+
     def item(self) -> float:
         assert self.size == 1
         return self[0]
@@ -360,7 +368,7 @@ class Tensor:
 
     def permute(self, *order: int) -> Tensor:
         """Permute tensor dimensions to *order"""
-        return Permute.apply(self, minitorch.tensor(list(order), device=giself.device))
+        return Permute.apply(self, minitorch.tensor(list(order), device=self.device))
 
     def view(self, *shape: int) -> Tensor:
         """Change the shape of the tensor to a new shape with the same size"""

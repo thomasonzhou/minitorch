@@ -59,6 +59,8 @@ class TensorBackend:
         self.neg_map = ops.map(operators.neg)
         self.sigmoid_map = ops.map(operators.sigmoid)
         self.relu_map = ops.map(operators.relu)
+        self.tanh_map = ops.map(operators.tanh)
+        self.gelu_map = ops.map(operators.gelu)
         self.log_map = ops.map(operators.log)
         self.exp_map = ops.map(operators.exp)
         self.id_map = ops.map(operators.id)
@@ -72,6 +74,8 @@ class TensorBackend:
         self.eq_zip = ops.zip(operators.eq)
         self.is_close_zip = ops.zip(operators.is_close)
         self.relu_back_zip = ops.zip(operators.relu_back)
+        self.tanh_back_zip = ops.zip(operators.tanh_back)
+        self.gelu_back_zip = ops.zip(operators.gelu_back)
         self.log_back_zip = ops.zip(operators.log_back)
         self.inv_back_zip = ops.zip(operators.inv_back)
 
