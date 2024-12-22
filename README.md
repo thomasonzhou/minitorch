@@ -29,6 +29,18 @@ pip install --upgrade pip
 ```python
 python project/run_mnist_multiclass.py 
 ```
+### Creating a custom model
+A list of supported modules and functions are listed in examples/custom.py.
+
+# Further extensions
+- [ ] Saving and loading torch state dictionaries
+- [ ] Transformer module
+  - [ ] tanh, gelu
+- [ ] Embedding module
+- [ ] Expand core tensor operations
+  - [ ] arange, cat, stack, hstack
+- [ ] ADAM optimizer
+- [ ] Additional loss functions
 
 # Credit
 
