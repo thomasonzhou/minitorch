@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import minitorch
 
-from . import operators
+from minitorch import operators
 from minitorch.autograd import Context
 
 if TYPE_CHECKING:

@@ -4,19 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import numpy as np
 from dataclasses import dataclass
 
 import minitorch
 
 from minitorch.core import operators
 from minitorch.autograd import Context
-from minitorch._ops import SimpleBackend, TensorBackend
 
 if TYPE_CHECKING:
     from minitorch._tensor import Tensor
-    from typing import Any, List, Tuple
-    from .tensor_data import UserIndex, UserShape
+    from typing import Tuple
 
 
 @dataclass
@@ -69,7 +66,7 @@ class Function:
         back = None
         if need_grad:
             back = History(cls, ctx, vals)
-        return minitorch._tensor.Tensor(c._tensor, back, backend=c.backend)
+        return minitorch._tensor.Tensor(c._tensor, back, device=c.device)
 
 
 class Neg(Function):
@@ -113,9 +110,7 @@ class Mul(Function):
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         (a, b) = ctx.saved_tensors
-        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(
-            a, grad_output
-        )
+        return grad_output.f.mul_zip(b, grad_output), grad_output.f.mul_zip(a, grad_output)
 
 
 class Sigmoid(Function):
@@ -133,7 +128,7 @@ class Sigmoid(Function):
             part1,
             sig.f.add_zip(
                 sig.f.neg_map(sig),
-                minitorch.Tensor.make([1], (1,), backend=sig.backend),
+                minitorch.Tensor.make([1], (1,), device=sig.backend),
             ),
         )
 
@@ -202,9 +197,7 @@ class LT(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return grad_output.zeros(grad_output.shape), grad_output.zeros(
-            grad_output.shape
-        )
+        return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
 
 
 class EQ(Function):
@@ -214,9 +207,7 @@ class EQ(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
-        return grad_output.zeros(grad_output.shape), grad_output.zeros(
-            grad_output.shape
-        )
+        return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
 
 
 class IsClose(Function):
@@ -247,15 +238,13 @@ class View(Function):
         ctx.save_for_backward(a.shape)
         assert a._tensor.is_contiguous(), "Must be contiguous to view"
         shape2 = [int(shape[i]) for i in range(shape.size)]
-        return a.make(a._tensor._storage, tuple(shape2), backend=a.backend)
+        return a.make(a._tensor._storage, tuple(shape2), device=a.device)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         (original,) = ctx.saved_values
         return (
-            grad_output.make(
-                grad_output._tensor._storage, original, backend=grad_output.backend
-            ),
+            grad_output.make(grad_output._tensor._storage, original, device=grad_output.device),
             0.0,
         )
 

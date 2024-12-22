@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy import array
-import random
 
 from minitorch.core import operators
-from minitorch.autograd import Context, Variable, backpropagate
+from minitorch.autograd import Variable, backpropagate
+import minitorch
 from ._tensor_functions import (
     EQ,
     LT,
@@ -28,17 +28,15 @@ from ._tensor_functions import (
     Sum,
     View,
 )
-from ._ops import SimpleBackend
 from ._tensor_helpers import strides_from_shape, index_to_position, shape_broadcast
 from ._tensor_functions import History
 
 if TYPE_CHECKING:
-    from typing import Any, Iterable, List, Optional, Sequence, Tuple, Type, Union
+    from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
     import numpy.typing as npt
 
     from .tensor_data import Shape, Storage, Strides, UserIndex, UserShape, UserStrides
-    from .tensor_functions import Function
     from .tensor_ops import TensorBackend
 
     TensorLike = Union[float, int, "Tensor"]
@@ -191,7 +189,7 @@ class Tensor:
     handles multidimensional arrays.
     """
 
-    backend: TensorBackend
+    device: TensorBackend
     history: Optional[History]
     grad: Optional[Tensor]
     _tensor: TensorData
@@ -203,23 +201,23 @@ class Tensor:
         v: TensorData,
         back: Optional[History] = None,
         name: Optional[str] = None,
-        backend: Optional[TensorBackend] = None,
+        device: Optional[TensorBackend] = None,
     ):
         global _tensor_count
         _tensor_count += 1
         self.unique_id = _tensor_count
         assert isinstance(v, TensorData)
-        assert backend is not None
+        assert device is not None
         self._tensor = v
         self.history = back
-        self.backend = backend
+        self.device = device
         self.grad = None
         if name is not None:
             self.name = name
         else:
             self.name = str(self.unique_id)
 
-        self.f = backend
+        self.f = device
 
     def requires_grad_(self, x: bool) -> None:
         self.history = History()
@@ -262,9 +260,9 @@ class Tensor:
     def _ensure_tensor(self, b: TensorLike) -> Tensor:
         """Turns a python number into a tensor with the same backend."""
         if isinstance(b, (int, float)):
-            c = Tensor.make([b], (1,), backend=self.backend)
+            c = Tensor.make([b], (1,), device=self.device)
         else:
-            b._type_(self.backend)
+            b._type_(self.device)
             c = b
         return c
 
@@ -358,11 +356,11 @@ class Tensor:
 
     def permute(self, *order: int) -> Tensor:
         """Permute tensor dimensions to *order"""
-        return Permute.apply(self, tensor(list(order)))
+        return Permute.apply(self, minitorch.tensor(list(order)))
 
     def view(self, *shape: int) -> Tensor:
         """Change the shape of the tensor to a new shape with the same size"""
-        return View.apply(self, tensor(list(shape)))
+        return View.apply(self, minitorch.tensor(list(shape)))
 
     def contiguous(self) -> Tensor:
         """Return a contiguous tensor with the same data"""
@@ -380,23 +378,23 @@ class Tensor:
         self._tensor.set(key2, val)
 
     # Internal methods used for autodiff.
-    def _type_(self, backend: TensorBackend) -> None:
-        self.backend = backend
-        if backend.cuda:  # pragma: no cover
+    def _type_(self, device: TensorBackend) -> None:
+        self.device = device
+        if device.cuda:  # pragma: no cover
             self._tensor.to_cuda_()
 
     def _new(self, tensor_data: TensorData) -> Tensor:
-        return Tensor(tensor_data, backend=self.backend)
+        return Tensor(tensor_data, device=self.device)
 
     @staticmethod
     def make(
         storage: Union[Storage, List[float]],
         shape: UserShape,
         strides: Optional[UserStrides] = None,
-        backend: Optional[TensorBackend] = None,
+        device: Optional[TensorBackend] = None,
     ) -> Tensor:
         """Create a new tensor from data"""
-        return Tensor(TensorData(storage, shape, strides), backend=backend)
+        return Tensor(TensorData(storage, shape, strides), device=device)
 
     def expand(self, other: Tensor) -> Tensor:
         """Method used to allow for backprop over broadcasting.
@@ -420,7 +418,7 @@ class Tensor:
         # Case 2: Backward is a smaller than self. Broadcast up.
         true_shape = TensorData.shape_broadcast(self.shape, other.shape)
         buf = self.zeros(true_shape)
-        self.backend.id_map(other, buf)
+        self.device.id_map(other, buf)
         if self.shape == true_shape:
             return buf
 
@@ -429,28 +427,28 @@ class Tensor:
         orig_shape = [1] * (len(out.shape) - len(self.shape)) + list(self.shape)
         for dim, shape in enumerate(out.shape):
             if orig_shape[dim] == 1 and shape != 1:
-                out = self.backend.add_reduce(out, dim)
+                out = self.device.add_reduce(out, dim)
         assert out.size == self.size, f"{out.shape} {self.shape}"
         # START CODE CHANGE (2021)
-        return Tensor.make(out._tensor._storage, self.shape, backend=self.backend)
+        return Tensor.make(out._tensor._storage, self.shape, device=self.device)
         # END CODE CHANGE (2021)
 
     def zeros(self, shape: Optional[UserShape] = None) -> Tensor:
         def zero(shape: UserShape) -> Tensor:
-            return Tensor.make([0.0] * int(operators.prod(shape)), shape, backend=self.backend)
+            return Tensor.make([0.0] * int(operators.prod(shape)), shape, device=self.device)
 
         if shape is None:
             out = zero(self.shape)
         else:
             out = zero(shape)
-        out._type_(self.backend)
+        out._type_(self.device)
         return out
 
     def tuple(self) -> Tuple[Storage, Shape, Strides]:
         return self._tensor.tuple()
 
     def detach(self) -> Tensor:
-        return Tensor(self._tensor, backend=self.backend)
+        return Tensor(self._tensor, device=self.device)
 
     # Variable elements for backprop
 
@@ -465,7 +463,7 @@ class Tensor:
         assert self.is_leaf(), "Only leaf variables can have derivatives."
         if self.grad is None:
             self.grad = Tensor.make(
-                [0] * int(operators.prod(self.shape)), self.shape, backend=self.backend
+                [0] * int(operators.prod(self.shape)), self.shape, device=self.device
             )
         self.grad += x
 
@@ -494,102 +492,12 @@ class Tensor:
     def backward(self, grad_output: Optional[Tensor] = None) -> None:
         if grad_output is None:
             assert self.shape == (1,), "Must provide grad_output if non-scalar"
-            grad_output = Tensor.make([1.0], (1,), backend=self.backend)
+            grad_output = Tensor.make([1.0], (1,), device=self.device)
         backpropagate(self, grad_output)
 
     def zero_grad_(self) -> None:  # pragma: no cover
         """Reset the derivative on this variable."""
         self.grad = None
-
-
-# Helpers for Constructing tensors
-def zeros(shape: UserShape, backend: TensorBackend = SimpleBackend) -> Tensor:
-    """Produce a zero tensor of size `shape`.
-
-    Args:
-        shape : shape of tensor
-        backend : tensor backend
-
-    Returns:
-        new tensor
-
-    """
-    return Tensor.make([0] * int(operators.prod(shape)), shape, backend=backend)
-
-
-def rand(
-    shape: UserShape,
-    backend: TensorBackend = SimpleBackend,
-    requires_grad: bool = False,
-) -> Tensor:
-    """Produce a random tensor of size `shape`.
-
-    Args:
-        shape : shape of tensor
-        backend : tensor backend
-        requires_grad : turn on autodifferentiation
-
-    Returns:
-        :class:`Tensor` : new tensor
-
-    """
-    vals = [random.random() for _ in range(int(operators.prod(shape)))]
-    tensor = Tensor.make(vals, shape, backend=backend)
-    tensor.requires_grad_(requires_grad)
-    return tensor
-
-
-def _tensor(
-    ls: Any,
-    shape: UserShape,
-    backend: TensorBackend = SimpleBackend,
-    requires_grad: bool = False,
-) -> Tensor:
-    """Produce a tensor with data ls and shape `shape`.
-
-    Args:
-        ls: data for tensor
-        shape: shape of tensor
-        backend: tensor backend
-        requires_grad: turn on autodifferentiation
-
-    Returns:
-        new tensor
-
-    """
-    tensor = Tensor.make(ls, shape, backend=backend)
-    tensor.requires_grad_(requires_grad)
-    return tensor
-
-
-def tensor(ls: Any, backend: TensorBackend = SimpleBackend, requires_grad: bool = False) -> Tensor:
-    """Produce a tensor with data and shape from ls
-
-    Args:
-        ls: data for tensor
-        backend : tensor backend
-        requires_grad : turn on autodifferentiation
-
-    Returns:
-        :class:`Tensor` : new tensor
-
-    """
-
-    def shape(ls: Any) -> List[int]:
-        if isinstance(ls, (list, tuple)):
-            return [len(ls)] + shape(ls[0])
-        else:
-            return []
-
-    def flatten(ls: Any) -> List[float]:
-        if isinstance(ls, (list, tuple)):
-            return [y for x in ls for y in flatten(x)]
-        else:
-            return [ls]
-
-    cur = flatten(ls)
-    shape2 = shape(ls)
-    return _tensor(cur, tuple(shape2), backend=backend, requires_grad=requires_grad)
 
 
 # Gradient check for tensors

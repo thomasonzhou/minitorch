@@ -5,7 +5,7 @@ import minitorch as torch
 mndata = MNIST("examples/data/")
 images, labels = mndata.load_training()
 
-BACKEND = torch.backends.get_default_backend()
+BACKEND = torch.backends.get_backend()
 BATCH = 16
 
 # Number of classes (10 digits)
@@ -71,7 +71,7 @@ class ImageTrain:
         self.model = Network()
 
     def run_one(self, x):
-        return self.model.forward(torch.tensor([x], backend=BACKEND))
+        return self.model.forward(torch.tensor([x], device=BACKEND))
 
     def train(
         self,
@@ -93,17 +93,11 @@ class ImageTrain:
             total_loss = 0.0
 
             model.train()
-            for batch_num, example_num in enumerate(
-                range(0, n_training_samples, BATCH)
-            ):
+            for batch_num, example_num in enumerate(range(0, n_training_samples, BATCH)):
                 if n_training_samples - example_num <= BATCH:
                     continue
-                y = torch.tensor(
-                    y_train[example_num : example_num + BATCH], backend=BACKEND
-                )
-                x = torch.tensor(
-                    X_train[example_num : example_num + BATCH], backend=BACKEND
-                )
+                y = torch.tensor(y_train[example_num : example_num + BATCH], device=BACKEND)
+                x = torch.tensor(X_train[example_num : example_num + BATCH], device=BACKEND)
                 x.requires_grad_(True)
                 y.requires_grad_(True)
 
@@ -111,7 +105,7 @@ class ImageTrain:
                 prob = (out * y).sum(1)
                 loss = -(prob / y.shape[0]).sum()
 
-                assert loss.backend == BACKEND
+                assert loss.device == BACKEND
                 loss.view(1).backward()
 
                 total_loss += loss[0]
@@ -127,11 +121,11 @@ class ImageTrain:
                     for val_example_num in range(0, 1 * BATCH, BATCH):
                         y = torch.tensor(
                             y_val[val_example_num : val_example_num + BATCH],
-                            backend=BACKEND,
+                            device=BACKEND,
                         )
                         x = torch.tensor(
                             X_val[val_example_num : val_example_num + BATCH],
-                            backend=BACKEND,
+                            device=BACKEND,
                         )
                         out = model.forward(x.view(BATCH, 1, H, W)).view(BATCH, C)
                         for i in range(BATCH):
