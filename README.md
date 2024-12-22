@@ -43,6 +43,7 @@ A list of supported modules and functions are listed in examples/custom.py.
   - [ ] arange, cat, stack, hstack
 - [ ] Adam optimizer
 - [ ] Additional loss functions
+- [ ] Einsum!
 
 ## Optimizations
 - [ ] Bindings
