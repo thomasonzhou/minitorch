@@ -78,6 +78,36 @@ def sigmoid(x: float) -> float:
     return 1.0 / (1.0 + math.exp(-x))
 
 
+def tanh(x: float) -> float:
+    """Compute the hyperbolic tangent of x"""
+    return math.tanh(x)
+    # pos_exp = math.exp(x)
+    # neg_exp = math.exp(-x)
+    # return (pos_exp - neg_exp) / (pos_exp + neg_exp)
+
+
+def tanh_back(x: float, deriv: float) -> float:
+    """Compute the derivative of tanh times a value."""
+    return (1.0 - math.tanh(x) ** 2) * deriv
+
+
+def gelu(x: float) -> float:
+    """Approximation of GeLU, a smooth alternative to ReLU
+    https://paperswithcode.com/method/gelu"""
+    return 0.5 * x * (1.0 + math.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x**3))))
+
+
+def gelu_back(x: float, deriv: float) -> float:
+    """Compute the derivative of approximated GeLU times a value"""
+    a = math.sqrt(2.0 / math.pi)
+    b = 0.044715
+    z = a * (x + b * (x**3))
+    tanh_z = math.tanh(z)
+    sech_z = 1 - (tanh_z**2)
+    gelu_deriv = 0.5 * (1 + tanh_z) + 0.5 * x * a * (1 + 3 * b * x * x) * sech_z
+    return gelu_deriv * deriv
+
+
 def log_back(x: float, deriv: float) -> float:
     """Compute the derivative of log times a value."""
     return deriv / x
@@ -100,9 +130,7 @@ def map(f: Callable[[float], float], l1: list[float]) -> list[float]:
     return [f(val) for val in l1]
 
 
-def zipWith(
-    f: Callable[[float, float], float], l1: list[float], l2: list[float]
-) -> list[float]:
+def zipWith(f: Callable[[float, float], float], l1: list[float], l2: list[float]) -> list[float]:
     """Apply a function f to combine lists l1 and l2."""
     return [f(val1, val2) for val1, val2 in zip(l1, l2)]
 

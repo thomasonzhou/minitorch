@@ -360,11 +360,11 @@ class Tensor:
 
     def permute(self, *order: int) -> Tensor:
         """Permute tensor dimensions to *order"""
-        return Permute.apply(self, minitorch.tensor(list(order), self.device))
+        return Permute.apply(self, minitorch.tensor(list(order), device=giself.device))
 
     def view(self, *shape: int) -> Tensor:
         """Change the shape of the tensor to a new shape with the same size"""
-        return View.apply(self, minitorch.tensor(list(shape), self.device))
+        return View.apply(self, minitorch.tensor(list(shape), device=self.device))
 
     def contiguous(self) -> Tensor:
         """Return a contiguous tensor with the same data"""
@@ -439,9 +439,7 @@ class Tensor:
 
     def zeros(self, shape: Optional[UserShape] = None) -> Tensor:
         def zero(shape: UserShape) -> Tensor:
-            return Tensor.make(
-                [0.0] * int(operators.prod(shape)), shape, device=self.device
-            )
+            return Tensor.make([0.0] * int(operators.prod(shape)), shape, device=self.device)
 
         if shape is None:
             out = zero(self.shape)
@@ -493,10 +491,7 @@ class Tensor:
 
         x = h.last_fn._backward(h.ctx, d_output)
         assert len(x) == len(h.inputs), f"Bug in function {h.last_fn}"
-        return [
-            (inp, inp.expand(self._ensure_tensor(d_in)))
-            for inp, d_in in zip(h.inputs, x)
-        ]
+        return [(inp, inp.expand(self._ensure_tensor(d_in))) for inp, d_in in zip(h.inputs, x)]
 
     def backward(self, grad_output: Optional[Tensor] = None) -> None:
         if grad_output is None:
