@@ -1,15 +1,19 @@
-# About 
+# PyTorch from Numpy and Numba
 
-This is an reimplementation of the PyTorch API. It supports the following:
+This is an reimplementation of a subset of the torch API. It supports the following:
 
-- [x] Autodifferentiation / Backpropagation
-- [x] Tensors, Views, Strides
+- [x] autodifferentiation / backpropagation
+- [x] tensors, views, broadcasting
 - [x] GPU / CUDA programming in Numba
-  - [x] Map / Zip / Reduce
-  - [x] Batched matrix multiplication
+  - [x] map / zip / reduce
+  - [x] batched matrix multiplication
 - [x] 1D / 2D Convolution and Pooling
+- [x] activation functions
+  - [x] ReLU / GeLU / softmax / tanh
+- [x] optimizers
+  - [x] stochastic gradient descent
 
-# Getting started
+# Getting Started
 
 To install dependencies, create a virtual environment and install the required packages:
 ```python
@@ -32,7 +36,7 @@ python project/run_mnist_multiclass.py
 ### Creating a custom model
 A list of supported modules and functions are listed in examples/custom.py.
 
-# Further extensions
+# Further Extensions
 
 ## Features
 - [ ] Saving and loading torch state dictionaries
