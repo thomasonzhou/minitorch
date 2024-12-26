@@ -4,11 +4,8 @@ from minitorch._tensor import Tensor
 import minitorch.core.operators as operators
 import random
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
 from minitorch._tensor_helpers import UserShape
-
-if TYPE_CHECKING:
-    pass
 
 
 # Helpers for Constructing tensors
@@ -99,3 +96,17 @@ def tensor(ls: Any, device, requires_grad: bool = False) -> Tensor:
     cur = flatten(ls)
     shape2 = shape(ls)
     return _tensor(cur, tuple(shape2), device=device, requires_grad=requires_grad)
+
+
+def arange(*args, device, requires_grad: bool = False) -> Tensor:
+    """Produce a tensor of from interval [start, end) with difference of step"""
+    if len(args) == 1:
+        start, end, step = 0, args[0], 1
+    elif len(args) == 2:
+        start, end, step = args[0], args[1], 1
+    elif len(args) == 3:
+        start, end, step = args
+    else:
+        raise TypeError(f"arange got {args}, but expected 1-3 args")
+
+    return tensor(list(range(start, end, step)), device=device, requires_grad=requires_grad)
