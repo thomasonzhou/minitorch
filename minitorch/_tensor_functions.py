@@ -271,7 +271,7 @@ class View(Function):
     def forward(ctx: Context, a: Tensor, shape: Tensor) -> Tensor:
         ctx.save_for_backward(a.shape)
         assert a._tensor.is_contiguous(), "Must be contiguous to view"
-        shape2 = [int(shape[i]) for i in range(shape.size)]
+        shape2 = [int(shape[i].item()) for i in range(shape.size)]
         return a.make(a._tensor._storage, tuple(shape2), device=a.device)
 
     @staticmethod

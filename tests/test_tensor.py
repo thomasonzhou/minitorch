@@ -7,15 +7,18 @@ def test_tensor_create():
     assert len(l1) == len(t1._tensor._storage)
 
     for i in range(len(l1)):
-        assert torch.isclose(t1[i], l1[i])
+        assert t1[i] == l1[i]
 
 
 def test_tensor_indexing():
     t1 = torch.arange(6).view(2, 3)
+    t2 = t1[:, :]
+    t3 = t1[:]
+    t4 = t1[...]
     for i in range(2):
         for j in range(3):
             val = i * 3 + j
-            assert t1[i, j] == val
+            assert t1[i, j] == t2[val] == t3[val] == t4[val] == val
 
 
 def test_where():

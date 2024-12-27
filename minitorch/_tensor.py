@@ -9,9 +9,10 @@ from numpy import array
 import minitorch._operators as operators
 from minitorch.autograd import Variable, backpropagate
 import minitorch
-from minitorch._tensor_helpers import IndexingError, Index, to_index
+from minitorch._tensor_helpers import IndexingError, to_index
 import random
 import numba
+from collections import deque
 
 from ._tensor_functions import (
     EQ,
@@ -43,8 +44,8 @@ if TYPE_CHECKING:
 
     import numpy.typing as npt
 
-    from .tensor_data import Shape, Storage, Strides, UserIndex, UserShape, UserStrides
-    from .tensor_ops import TensorBackend
+    from ._tensor_helpers import Index, Shape, Storage, Strides, UserIndex, UserShape, UserStrides
+    from ._ops import TensorBackend
 
     TensorLike = Union[float, int, "Tensor"]
 
@@ -105,23 +106,53 @@ class TensorData:
     def shape_broadcast(shape_a: UserShape, shape_b: UserShape) -> UserShape:
         return shape_broadcast(shape_a, shape_b)
 
-    def index(self, index: Union[int, UserIndex]) -> int:
-        if isinstance(index, int):
-            aindex: Index = array([index])
-        if isinstance(index, tuple):
-            aindex = array(index)
+    def index(self, index: Union[int, UserIndex]) -> Sequence[float]:
+        if isinstance(index, int) or index is Ellipsis:
+            index: Index = [index]
+        elif isinstance(index, tuple):
+            index: Index = list(index)
 
-        # Check for errors
-        if aindex.shape[0] != len(self.shape):
-            raise IndexingError(f"Index {aindex} must be size of {self.shape}.")
-        for i, ind in enumerate(aindex):
-            if ind >= self.shape[i]:
-                raise IndexingError(f"Index {aindex} out of range {self.shape}.")
-            if ind < 0:
-                raise IndexingError(f"Negative indexing for {aindex} not supported.")
+        if (ellipses := index.count(Ellipsis)) > 0:
+            if ellipses > 1:
+                raise ValueError("Cannot use more than one ellipsis when indexing")
+            missing_dims = len(self.shape) - len(index) + 1
+            i = index.index(Ellipsis)
+            index = index[:i] + [slice(None) for _ in range(missing_dims)] + index[i + 1 :]
+
+        if len(index) > len(self.shape):
+            index = index + [slice(None) for _ in range(len(self.shape) - len(index))]
+
+        to_process = deque([index])
+
+        # parse slices
+        for i in range(len(self.shape)):
+            layers = len(to_process)
+            for layer in range(layers):
+                curr = to_process.popleft()
+                if isinstance(curr[i], slice):
+                    start = 0 if curr[i].start is None else curr[i].start
+                    stop = self.shape[i] if curr[i].stop is None else curr[i].stop
+                    step = 1 if curr[i].step is None else curr[i].step
+                    for j in range(start, stop, step):
+                        to_process.append(np.where(np.arange(len(self.shape)) == i, j, curr))
+                elif isinstance(curr[i], int):
+                    to_process.append(curr)
+                else:
+                    raise ValueError(f"Invalid index {curr[i]} used at position {i}")
+
+        for index in to_process:
+            aindex = array(index)
+            # Check for errors
+            if aindex.shape[0] != len(self.shape):
+                raise IndexingError(f"Index {aindex} must be size of {self.shape}.")
+            for i, ind in enumerate(aindex):
+                if ind >= self.shape[i]:
+                    raise IndexingError(f"Index {aindex} out of range {self.shape}.")
+                if ind < 0:
+                    raise IndexingError(f"Negative indexing for {aindex} not supported.")
 
         # Call fast indexing.
-        return index_to_position(array(index), self._strides)
+        return [index_to_position(array(idx), self._strides) for idx in list(to_process)]
 
     def indices(self) -> Iterable[UserIndex]:
         lshape: Shape = array(self.shape)
@@ -134,6 +165,7 @@ class TensorData:
         return tuple((random.randint(0, s - 1) for s in self.shape))
 
     def get(self, key: UserIndex) -> float:
+        """Retrieve a value or subtensor, given a tuple of indices"""
         x: float = self._storage[self.index(key)]
         return x
 
@@ -215,7 +247,7 @@ class Tensor:
         self.unique_id = _tensor_count
         assert isinstance(v, TensorData)
         assert device is not None
-        self._tensor = v
+        self._tensor: TensorData = v
         self.history = back
         self.device = device
         self.grad = None
@@ -386,7 +418,7 @@ class Tensor:
         return self._tensor.to_string()
 
     def __getitem__(self, key: Union[int, UserIndex]) -> float:
-        key2 = (key,) if isinstance(key, int) else key
+        key2 = (key,) if isinstance(key, (int, slice)) else key  # expects a tuple of values
         return self._tensor.get(key2)
 
     def __setitem__(self, key: Union[int, UserIndex], val: float) -> None:

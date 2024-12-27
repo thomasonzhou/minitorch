@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Sequence, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -22,7 +22,7 @@ Index: TypeAlias = npt.NDArray[np.int32]
 Shape: TypeAlias = npt.NDArray[np.int32]
 Strides: TypeAlias = npt.NDArray[np.int32]
 
-UserIndex: TypeAlias = Sequence[int]
+UserIndex: TypeAlias = Sequence[Union[int, slice, Ellipsis]]
 UserShape: TypeAlias = Sequence[int]
 UserStrides: TypeAlias = Sequence[int]
 
@@ -102,9 +102,7 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     return tuple(res)
 
 
-def broadcast_index(
-    big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex
-) -> None:
+def broadcast_index(big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex) -> None:
     """Convert a `big_index` into `big_shape` to a smaller `out_index`
     into `shape` following broadcasting rules. In this case
     it may be larger or with more dimensions than the `shape`
