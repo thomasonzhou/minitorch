@@ -36,10 +36,23 @@ python project/run_mnist_multiclass.py
 ### Creating a custom model
 A list of supported modules and functions are listed in examples/custom.py.
 
-# Further Extensions
+# Repo Structure
+
+Files prefixed with a leading underscore implement abstract base classes and tensor manipulation functions.
+
+| Subpackage | Description |
+|------------|-------------|
+| autograd | central difference / topological sort of computational graph |
+| backends | naive / parallel / CUDA implementations of map / zip / reduce / matrix multiply |
+| nn | modules and functions for building networks |
+| optim | optimizers for loss function minimization |
+
+# Extensions
 
 ## Features
-- [ ] Saving and loading torch state dictionaries
+- [ ] Saving and loading 
+  - [ ] torch state dictionaries
+  - [ ] ONNX
 - [ ] Transformer module
   - [x] tanh, GeLU
 - [ ] Embedding module
