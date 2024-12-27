@@ -10,16 +10,25 @@ def test_tensor_create():
         assert t1[i] == l1[i]
 
 
-def test_tensor_indexing():
+def test_tensor_indexing_1():
+    t1 = torch.arange(5)
+    t2 = t1[:]
+    t3 = t1[...]
+    for i in range(5):
+        assert t1[i] == t2[i] == t3[i]
+
+
+def test_tensor_indexing_2():
     t1 = torch.arange(6).view(2, 3)
-    t2 = t1[:, :]
+    t2 = t1[:]
     t3 = t1[...]
     t4 = t1[:, ...]
     t5 = t1[..., :]
+    t6 = t1[:, :]
     for i in range(2):
         for j in range(3):
             val = i * 3 + j
-            assert t1[i, j] == t2[i, j] == t3[i, j] == t4[i, j] == t5[i, j] == val
+            assert t1[i, j] == t2[i, j] == t3[i, j] == t4[i, j] == t5[i, j] == t6[i, j] == val
 
 
 def test_where():

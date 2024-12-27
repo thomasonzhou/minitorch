@@ -109,7 +109,7 @@ class TensorData:
         return shape_broadcast(shape_a, shape_b)
 
     def index(self, index: Union[int, UserIndex]) -> Union[float, TensorData]:
-        if isinstance(index, int) or index is Ellipsis:
+        if isinstance(index, (int, slice)) or index is Ellipsis:
             index: Index = [index]
         elif isinstance(index, tuple):
             index: Index = list(index)
@@ -121,7 +121,7 @@ class TensorData:
             i = index.index(Ellipsis)
             index = index[:i] + [slice(None) for _ in range(missing_dims)] + index[i + 1 :]
 
-        if len(index) > len(self.shape):
+        if len(index) < len(self.shape):
             index = index + [slice(None) for _ in range(len(self.shape) - len(index))]
 
         to_process = deque([index])
@@ -137,10 +137,12 @@ class TensorData:
                     step = 1 if curr[i].step is None else curr[i].step
                     for j in range(start, stop, step):
                         to_process.append(np.where(np.arange(len(self.shape)) == i, j, curr))
-                elif isinstance(curr[i], int):
+                elif isinstance(curr[i], (int, np.integer)):
                     to_process.append(curr)
                 else:
-                    raise ValueError(f"Invalid index {curr[i]} used at position {i}")
+                    raise ValueError(
+                        f"Invalid index {curr[i]} type {type(curr[i])} used at position {i}"
+                    )
 
         is_view = any(isinstance(idx, slice) for idx in index)
 
@@ -164,20 +166,6 @@ class TensorData:
                         )
                     offset += idx * self.strides[i]
             return TensorData(self._storage, tuple(new_shape), tuple(new_strides), is_view=is_view)
-
-        for index in to_process:
-            aindex = array(index)
-            # Check for errors
-            if aindex.shape[0] != len(self.shape):
-                raise IndexingError(f"Index {aindex} must be size of {self.shape}.")
-            for i, ind in enumerate(aindex):
-                if ind >= self.shape[i]:
-                    raise IndexingError(f"Index {aindex} out of range {self.shape}.")
-                if ind < 0:
-                    raise IndexingError(f"Negative indexing for {aindex} not supported.")
-
-        # Call fast indexing.
-        return [index_to_position(array(idx), self._strides) for idx in list(to_process)]
 
     def indices(self) -> Iterable[UserIndex]:
         lshape: Shape = array(self.shape)
