@@ -136,9 +136,7 @@ class FastOps(TensorOps):
 
 # Implementations
 @_njit  # type: ignore
-def _stride_aligned(
-    shape_1: Shape, strides_1: Strides, shape_2: Shape, strides_2: Strides
-) -> bool:
+def _stride_aligned(shape_1: Shape, strides_1: Strides, shape_2: Shape, strides_2: Strides) -> bool:
     """Check if the shapes and strides allow for a one to one mapping of input to output position"""
     if len(shape_1) != len(shape_2):
         return False
@@ -196,9 +194,7 @@ def tensor_map(
 
 def tensor_zip(
     fn: Callable[[float, float], float],
-) -> Callable[
-    [Storage, Shape, Strides, Storage, Shape, Strides, Storage, Shape, Strides], None
-]:
+) -> Callable[[Storage, Shape, Strides, Storage, Shape, Strides, Storage, Shape, Strides], None]:
     """NUMBA higher-order tensor zip function. See `tensor_ops.py` for description.
 
     Optimizations:
@@ -292,9 +288,7 @@ def tensor_reduce(
             )  # same dimensions except for reduced
             reduced_val = out[out_pos]
             for j in range(a_shape[reduce_dim]):
-                reduced_val = fn(
-                    reduced_val, a_storage[a_start_pos + j * a_strides[reduce_dim]]
-                )
+                reduced_val = fn(reduced_val, a_storage[a_start_pos + j * a_strides[reduce_dim]])
             out[out_pos] = reduced_val
 
     return njit(_reduce, parallel=True)
@@ -349,9 +343,7 @@ def _tensor_matrix_multiply(
     for batch in prange(out_shape[0]):
         for i in prange(a_shape[-2]):
             for k in prange(b_shape[-1]):
-                out_pos = (
-                    batch * out_strides[0] + i * out_strides[1] + k * out_strides[2]
-                )
+                out_pos = batch * out_strides[0] + i * out_strides[1] + k * out_strides[2]
                 total = 0
                 for j in range(a_shape[-1]):  # common dim, serial
                     a_pos = batch * a_batch_stride + i * a_strides[1] + j * a_strides[2]

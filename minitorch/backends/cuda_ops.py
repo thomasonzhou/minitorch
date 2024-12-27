@@ -183,9 +183,7 @@ def tensor_map(
 
 def tensor_zip(
     fn: Callable[[float, float], float],
-) -> Callable[
-    [Storage, Shape, Strides, Storage, Shape, Strides, Storage, Shape, Strides], None
-]:
+) -> Callable[[Storage, Shape, Strides, Storage, Shape, Strides, Storage, Shape, Strides], None]:
     """CUDA higher-order tensor zipWith (or map2) function ::
 
       fn_zip = tensor_zip(fn)
@@ -283,9 +281,7 @@ def sum_practice(a: Tensor) -> TensorData:
     blockspergrid = (size // THREADS_PER_BLOCK) + 1
     out = TensorData([0.0 for i in range(2)], (2,))
     out.to_cuda_()
-    jit_sum_practice[blockspergrid, threadsperblock](
-        out.tuple()[0], a._tensor._storage, size
-    )
+    jit_sum_practice[blockspergrid, threadsperblock](out.tuple()[0], a._tensor._storage, size)
     return out
 
 
@@ -348,9 +344,7 @@ def tensor_reduce(
             stride //= 2
             cuda.syncthreads()
 
-        if (
-            pos == 0
-        ):  # cell 0 contains the final data, so only one thread needs to write
+        if pos == 0:  # cell 0 contains the final data, so only one thread needs to write
             out[out_location] = cache[0]
 
     return jit(_reduce)  # type: ignore
@@ -499,9 +493,7 @@ def _tensor_matrix_multiply(
             if (
                 k + pk < K
             ):  # the last iteration of the outer loop may not need to load BLOCK_DIM values into memory
-                total += (
-                    a_shared[pi, pk] * b_shared[pk, pj]
-                )  # one element of the dot product
+                total += a_shared[pi, pk] * b_shared[pk, pj]  # one element of the dot product
 
         cuda.syncthreads()  # guard against updating shared memory until all threads are ready
 

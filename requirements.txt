@@ -6,3 +6,6 @@ typing-extensions==4.12.2
 
 # for examples/run_mnist_multiclass.py
 python-mnist==0.7
+
+# testing
+pytest

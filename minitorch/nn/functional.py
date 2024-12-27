@@ -67,9 +67,7 @@ class Max(Function):
             t1,
             dim,
         ) = ctx.saved_tensors
-        return grad_output * argmax(t1, int(dim.item())), grad_output.zeros(
-            grad_output.shape
-        )
+        return grad_output * argmax(t1, int(dim.item())), grad_output.zeros(grad_output.shape)
 
 
 def max(t: Tensor, dim: Optional[int] = None) -> Tensor:
@@ -95,9 +93,7 @@ def maxpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
     """Compute the maximum over the last dimension of tiled input"""
     tiled_tensor, new_height, new_width = tile(input, kernel)
 
-    return max(tiled_tensor, 4).view(
-        input.shape[0], input.shape[1], new_height, new_width
-    )
+    return max(tiled_tensor, 4).view(input.shape[0], input.shape[1], new_height, new_width)
 
 
 def dropout(t: Tensor, probability: float, ignore: bool = False) -> Tensor:

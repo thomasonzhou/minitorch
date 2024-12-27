@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Callable, Optional, Type
 
 from typing_extensions import Protocol
 
-from minitorch.core import operators
+import minitorch._operators as operators
 
 if TYPE_CHECKING:
     from ._tensor import Tensor

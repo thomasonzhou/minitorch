@@ -2,7 +2,7 @@
 
 from typing import Callable, Generic, Iterable, Tuple, TypeVar
 
-import minitorch.core.operators as operators
+import minitorch._operators as operators
 
 A = TypeVar("A")
 
@@ -115,9 +115,7 @@ class MathTest(Generic[A]):
     def complex(a: A) -> A:
         return (
             operators.log(
-                operators.sigmoid(
-                    operators.relu(operators.relu(a * 10 + 7) * 6 + 5) * 10
-                )
+                operators.sigmoid(operators.relu(operators.relu(a * 10 + 7) * 6 + 5) * 10)
             )
             / 50
         )

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 import minitorch
 
-from minitorch.core import operators
+import minitorch._operators as operators
 from minitorch.autograd import Context
 
 if TYPE_CHECKING:

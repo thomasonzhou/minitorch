@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from minitorch.core import operators
+import minitorch._operators as operators
 from minitorch.autograd import Context
 
 if TYPE_CHECKING:

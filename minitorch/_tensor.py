@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from numpy import array
 
-from minitorch.core import operators
+import minitorch._operators as operators
 from minitorch.autograd import Variable, backpropagate
 import minitorch
 from minitorch._tensor_helpers import IndexingError, Index, to_index
