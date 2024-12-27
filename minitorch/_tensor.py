@@ -18,6 +18,7 @@ from ._tensor_functions import (
     LT,
     Add,
     All,
+    BooleanNot,
     Copy,
     Exp,
     Inv,
@@ -320,6 +321,9 @@ class Tensor:
 
     def __hash__(self) -> int:
         return self.unique_id
+
+    def __invert__(self) -> Tensor:
+        return BooleanNot.apply(self)
 
     def all(self, dim: Optional[int] = None) -> Tensor:
         if dim is None:

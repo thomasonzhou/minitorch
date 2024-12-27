@@ -23,6 +23,20 @@ def zeros(shape: UserShape, device=None) -> Tensor:
     return Tensor.make([0] * int(operators.prod(shape)), shape, device=device)
 
 
+def ones(shape: UserShape, device=None) -> Tensor:
+    """Produce a ones tensor of size `shape`.
+
+    Args:
+        shape : shape of tensor
+        device : tensor backend
+
+    Returns:
+        new tensor
+
+    """
+    return Tensor.make([1] * int(operators.prod(shape)), shape, device=device)
+
+
 def rand(
     shape: UserShape,
     device,

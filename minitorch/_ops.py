@@ -57,6 +57,7 @@ class TensorBackend:
         """
         # Maps
         self.neg_map = ops.map(operators.neg)
+        self.boolean_not_map = ops.map(operators.boolean_not)
         self.sigmoid_map = ops.map(operators.sigmoid)
         self.relu_map = ops.map(operators.relu)
         self.tanh_map = ops.map(operators.tanh)

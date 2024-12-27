@@ -234,6 +234,16 @@ class EQ(Function):
         return grad_output.zeros(grad_output.shape), grad_output.zeros(grad_output.shape)
 
 
+class BooleanNot(Function):
+    @staticmethod
+    def forward(ctx: Context, a: Tensor) -> Tensor:
+        return a.f.boolean_not_map(a)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        return grad_output.zeros(grad_output.shape)
+
+
 class IsClose(Function):
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:

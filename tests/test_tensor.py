@@ -1,10 +1,34 @@
 import minitorch as torch
 
 
-def test_tensor():
+def test_tensor_create():
     l1 = [1, 1, 2, 3, 5, 8]
     t1 = torch.tensor(l1)
     assert len(l1) == len(t1._tensor._storage)
 
     for i in range(len(l1)):
         assert torch.isclose(t1[i], l1[i])
+
+
+def test_tensor_indexing():
+    t1 = torch.arange(6).view(2, 3)
+    for i in range(2):
+        for j in range(3):
+            val = i * 3 + j
+            assert t1[i, j] == val
+
+
+def test_where():
+    shape = (2, 3)
+    mask = torch.tensor([[True, False, True], [False, True, True]])
+    t1 = torch.ones(shape)
+    t2 = torch.zeros(shape)
+
+    t3 = torch.where(mask, t1, t2)
+
+    for i in range(shape[0]):
+        for j in range(shape[1]):
+            if mask[i, j]:
+                assert t3[i, j] == t1[i, j]
+            else:
+                assert t3[i, j] == t2[i, j]

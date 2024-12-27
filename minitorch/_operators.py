@@ -40,6 +40,11 @@ def eq(x: float, y: float) -> float:
         return 0.0
 
 
+def boolean_not(x: bool) -> bool:
+    """Change False to True and True to False"""
+    return not x
+
+
 def max(x: float, y: float) -> float:
     """Find the max of x and y."""
     if x < y:
