@@ -63,6 +63,7 @@ class TensorData:
         storage: Union[Sequence[float], Storage],
         shape: UserShape,
         strides: Optional[UserStrides] = None,
+        is_view: bool = False,
     ):
         if isinstance(storage, np.ndarray):
             self._storage = storage
@@ -82,7 +83,8 @@ class TensorData:
         self.dims = len(strides)
         self.size = int(operators.prod(shape))
         self.shape = shape
-        assert len(self._storage) == self.size
+        if not is_view:
+            assert len(self._storage) == self.size
 
     def to_cuda_(self) -> None:  # pragma: no cover
         if not numba.cuda.is_cuda_array(self._storage):
@@ -106,7 +108,7 @@ class TensorData:
     def shape_broadcast(shape_a: UserShape, shape_b: UserShape) -> UserShape:
         return shape_broadcast(shape_a, shape_b)
 
-    def index(self, index: Union[int, UserIndex]) -> Sequence[float]:
+    def index(self, index: Union[int, UserIndex]) -> Union[float, TensorData]:
         if isinstance(index, int) or index is Ellipsis:
             index: Index = [index]
         elif isinstance(index, tuple):
@@ -140,6 +142,29 @@ class TensorData:
                 else:
                     raise ValueError(f"Invalid index {curr[i]} used at position {i}")
 
+        is_view = any(isinstance(idx, slice) for idx in index)
+
+        if not is_view:
+            return self._storage[index_to_position(index, self.strides)]
+        else:
+            new_shape = []
+            new_strides = []
+            offset = 0
+            for i, idx in enumerate(index):
+                if isinstance(idx, slice):
+                    start, stop, step = idx.indices(self.shape[i])
+                    new_dim = (stop - start + (step - 1)) // step
+                    new_shape.append(new_dim)
+                    new_strides.append(self.strides[i] * step)
+                    offset += start * self.strides[i]
+                elif isinstance(idx, int):
+                    if idx < 0 or idx >= self.shape[i]:
+                        raise IndexingError(
+                            f"Index {idx} out of range for dimension {i} with size {self.shape[i]}."
+                        )
+                    offset += idx * self.strides[i]
+            return TensorData(self._storage, tuple(new_shape), tuple(new_strides), is_view=is_view)
+
         for index in to_process:
             aindex = array(index)
             # Check for errors
@@ -164,9 +189,9 @@ class TensorData:
     def sample(self) -> UserIndex:
         return tuple((random.randint(0, s - 1) for s in self.shape))
 
-    def get(self, key: UserIndex) -> float:
+    def get(self, key: UserIndex) -> Union[float, TensorData]:
         """Retrieve a value or subtensor, given a tuple of indices"""
-        x: float = self._storage[self.index(key)]
+        x = self.index(key)
         return x
 
     def set(self, key: UserIndex, val: float) -> None:
@@ -408,7 +433,7 @@ class Tensor:
 
     def view(self, *shape: int) -> Tensor:
         """Change the shape of the tensor to a new shape with the same size"""
-        return View.apply(self, minitorch.tensor(list(shape), device=self.device))
+        return View.apply(self, tuple(shape))
 
     def contiguous(self) -> Tensor:
         """Return a contiguous tensor with the same data"""
@@ -419,7 +444,11 @@ class Tensor:
 
     def __getitem__(self, key: Union[int, UserIndex]) -> float:
         key2 = (key,) if isinstance(key, (int, slice)) else key  # expects a tuple of values
-        return self._tensor.get(key2)
+        x = self._tensor.get(key2)
+        if isinstance(x, (int, float)):
+            return x
+        elif isinstance(x, TensorData):
+            return self._new(x)
 
     def __setitem__(self, key: Union[int, UserIndex], val: float) -> None:
         key2 = (key,) if isinstance(key, int) else key
@@ -477,9 +506,7 @@ class Tensor:
             if orig_shape[dim] == 1 and shape != 1:
                 out = self.device.add_reduce(out, dim)
         assert out.size == self.size, f"{out.shape} {self.shape}"
-        # START CODE CHANGE (2021)
         return Tensor.make(out._tensor._storage, self.shape, device=self.device)
-        # END CODE CHANGE (2021)
 
     def zeros(self, shape: Optional[UserShape] = None) -> Tensor:
         def zero(shape: UserShape) -> Tensor:

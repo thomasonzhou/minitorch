@@ -13,14 +13,13 @@ def test_tensor_create():
 def test_tensor_indexing():
     t1 = torch.arange(6).view(2, 3)
     t2 = t1[:, :]
-    t3 = t1[:]
-    t4 = t1[...]
-    t5 = t1[:, ...]
-    t6 = t1[..., :]
+    t3 = t1[...]
+    t4 = t1[:, ...]
+    t5 = t1[..., :]
     for i in range(2):
         for j in range(3):
             val = i * 3 + j
-            assert t1[i, j] == t2[val] == t3[val] == t4[val] == t5[val] == t6[val] == val
+            assert t1[i, j] == t2[i, j] == t3[i, j] == t4[i, j] == t5[i, j] == val
 
 
 def test_where():

@@ -48,10 +48,15 @@ class Function:
     def apply(cls, *vals: Tensor) -> Tensor:
         raw_vals = []
         need_grad = False
+        tensor_inputs = []
         for v in vals:
-            if v.requires_grad():
-                need_grad = True
-            raw_vals.append(v.detach())
+            if hasattr(v, "requires_grad"):
+                tensor_inputs.append(v)
+                if v.requires_grad():
+                    need_grad = True
+                raw_vals.append(v.detach())
+            else:
+                raw_vals.append(v)
 
         # Create the context.
         ctx = Context(not need_grad)
@@ -268,19 +273,15 @@ class Permute(Function):
 
 class View(Function):
     @staticmethod
-    def forward(ctx: Context, a: Tensor, shape: Tensor) -> Tensor:
+    def forward(ctx: Context, a: Tensor, shape: tuple[float] = None) -> Tensor:
         ctx.save_for_backward(a.shape)
         assert a._tensor.is_contiguous(), "Must be contiguous to view"
-        shape2 = [int(shape[i].item()) for i in range(shape.size)]
-        return a.make(a._tensor._storage, tuple(shape2), device=a.device)
+        return a.make(a._tensor._storage, shape, device=a.device)
 
     @staticmethod
-    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor]:
         (original,) = ctx.saved_values
-        return (
-            grad_output.make(grad_output._tensor._storage, original, device=grad_output.device),
-            0.0,
-        )
+        return grad_output.make(grad_output._tensor._storage, original, device=grad_output.device)
 
 
 class Copy(Function):
