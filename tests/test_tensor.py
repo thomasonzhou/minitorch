@@ -25,17 +25,27 @@ def test_tensor_indexing_2():
     t4 = t1[:, ...]
     t5 = t1[..., :]
     t6 = t1[:, :]
+    t7 = t1[:2, :3]
     for i in range(2):
         for j in range(3):
             val = i * 3 + j
-            assert t1[i, j] == t2[i, j] == t3[i, j] == t4[i, j] == t5[i, j] == t6[i, j] == val
+            assert (
+                t1[i, j]
+                == t2[i, j]
+                == t3[i, j]
+                == t4[i, j]
+                == t5[i, j]
+                == t6[i, j]
+                == t7[i, j]
+                == val
+            )
 
 
 def test_where():
     shape = (2, 3)
     mask = torch.tensor([[True, False, True], [False, True, True]])
-    t1 = torch.ones(shape)
-    t2 = torch.zeros(shape)
+    t1 = torch.ones(*shape)
+    t2 = torch.zeros(*shape)
 
     t3 = torch.where(mask, t1, t2)
 

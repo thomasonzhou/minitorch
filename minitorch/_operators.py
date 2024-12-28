@@ -161,11 +161,11 @@ def addLists(l1: list[float], l2: list[float]) -> list[float]:
     return zipWith(add, l1, l2)
 
 
-def sum(l: list[float]) -> float:
-    """Compute the sum of list l."""
-    return reduce(add, l)
+def sum(l1: list[float]) -> float:
+    """Compute the sum of list l1."""
+    return reduce(add, l1)
 
 
-def prod(l: Sequence[float]) -> float:
-    """Compute the product of list l."""
-    return reduce(mul, l)
+def prod(l1: Sequence[float]) -> float:
+    """Compute the product of list l1."""
+    return reduce(mul, l1)

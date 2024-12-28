@@ -273,15 +273,18 @@ class Permute(Function):
 
 class View(Function):
     @staticmethod
-    def forward(ctx: Context, a: Tensor, shape: tuple[float] = None) -> Tensor:
+    def forward(ctx: Context, a: Tensor, shape: Tensor) -> Tensor:
         ctx.save_for_backward(a.shape)
         assert a._tensor.is_contiguous(), "Must be contiguous to view"
-        return a.make(a._tensor._storage, shape, device=a.device)
+        shape2 = [int(shape[i].item()) for i in range(shape.size)]
+        return a.make(a._tensor._storage, tuple(shape2), device=a.device)
 
     @staticmethod
-    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor]:
-        (original,) = ctx.saved_values
-        return grad_output.make(grad_output._tensor._storage, original, device=grad_output.device)
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
+        (original_shape,) = ctx.saved_values
+        return grad_output.make(
+            grad_output._tensor._storage, original_shape, device=grad_output.device
+        ), 0.0
 
 
 class Copy(Function):

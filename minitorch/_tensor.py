@@ -421,7 +421,7 @@ class Tensor:
 
     def view(self, *shape: int) -> Tensor:
         """Change the shape of the tensor to a new shape with the same size"""
-        return View.apply(self, tuple(shape))
+        return View.apply(self, minitorch.tensor(list(shape), device=self.device))
 
     def contiguous(self) -> Tensor:
         """Return a contiguous tensor with the same data"""

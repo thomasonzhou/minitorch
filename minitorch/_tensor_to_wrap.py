@@ -9,7 +9,7 @@ from minitorch._tensor_helpers import UserShape
 
 
 # Helpers for Constructing tensors
-def zeros(shape: UserShape, device=None) -> Tensor:
+def zeros(*shape: UserShape, device=None) -> Tensor:
     """Produce a zero tensor of size `shape`.
 
     Args:
@@ -20,10 +20,12 @@ def zeros(shape: UserShape, device=None) -> Tensor:
         new tensor
 
     """
-    return Tensor.make([0] * int(operators.prod(shape)), shape, device=device)
+
+    res = Tensor.make([0] * int(operators.prod(shape)), shape, device=device)
+    return res
 
 
-def ones(shape: UserShape, device=None) -> Tensor:
+def ones(*shape: UserShape, device=None) -> Tensor:
     """Produce a ones tensor of size `shape`.
 
     Args:
@@ -38,7 +40,7 @@ def ones(shape: UserShape, device=None) -> Tensor:
 
 
 def rand(
-    shape: UserShape,
+    *shape: UserShape,
     device,
     requires_grad: bool = False,
 ) -> Tensor:

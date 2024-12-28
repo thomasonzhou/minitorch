@@ -101,5 +101,5 @@ def dropout(t: Tensor, probability: float, ignore: bool = False) -> Tensor:
     assert 0.0 <= probability <= 1.0
     if ignore or probability == 0:
         return t
-    drop = 1.0 * (probability <= minitorch.rand(t.shape, device=t.device))
+    drop = 1.0 * (probability <= minitorch.rand(*t.shape, device=t.device))
     return t * drop
