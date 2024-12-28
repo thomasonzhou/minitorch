@@ -7,8 +7,23 @@ import random
 from typing import Any
 from minitorch._tensor_helpers import UserShape
 
+from functools import wraps
+
+
+def unpack_iterable(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if isinstance(args[0], (tuple, list)):
+            new_args = (*args[0], *args[1:])
+            return f(*new_args, **kwargs)
+        else:
+            return f(*args, **kwargs)
+
+    return wrapper
+
 
 # Helpers for Constructing tensors
+@unpack_iterable
 def zeros(*shape: UserShape, device=None) -> Tensor:
     """Produce a zero tensor of size `shape`.
 
@@ -21,10 +36,10 @@ def zeros(*shape: UserShape, device=None) -> Tensor:
 
     """
 
-    res = Tensor.make([0] * int(operators.prod(shape)), shape, device=device)
-    return res
+    return Tensor.make([0] * int(operators.prod(shape)), shape, device=device)
 
 
+@unpack_iterable
 def ones(*shape: UserShape, device=None) -> Tensor:
     """Produce a ones tensor of size `shape`.
 
@@ -39,6 +54,7 @@ def ones(*shape: UserShape, device=None) -> Tensor:
     return Tensor.make([1] * int(operators.prod(shape)), shape, device=device)
 
 
+@unpack_iterable
 def rand(
     *shape: UserShape,
     device,
