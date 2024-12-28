@@ -41,6 +41,13 @@ def test_tensor_indexing_2():
             )
 
 
+def test_newaxis():
+    t1 = torch.ones(9).view(3, 3)
+    t2 = t1[..., None]
+    t3 = t1[:, :, torch.newaxis]
+    assert t2.shape == t3.shape == (3, 3, 1)
+
+
 def test_where():
     shape = (2, 3)
     mask = torch.tensor([[True, False, True], [False, True, True]])

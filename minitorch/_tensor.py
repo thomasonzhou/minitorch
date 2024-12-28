@@ -12,7 +12,6 @@ import minitorch
 from minitorch._tensor_helpers import IndexingError, to_index
 import random
 import numba
-from collections import deque
 
 from ._tensor_functions import (
     EQ,
@@ -36,7 +35,7 @@ from ._tensor_functions import (
     Sum,
     View,
 )
-from ._tensor_helpers import strides_from_shape, index_to_position, shape_broadcast
+from ._tensor_helpers import strides_from_shape, shape_broadcast
 from ._tensor_functions import History
 
 if TYPE_CHECKING:
@@ -114,58 +113,54 @@ class TensorData:
         elif isinstance(index, tuple):
             index: Index = list(index)
 
-        if (ellipses := index.count(Ellipsis)) > 0:
-            if ellipses > 1:
-                raise ValueError("Cannot use more than one ellipsis when indexing")
-            missing_dims = len(self.shape) - len(index) + 1
-            i = index.index(Ellipsis)
-            index = index[:i] + [slice(None) for _ in range(missing_dims)] + index[i + 1 :]
+        new_axes = 0
+        ellipses = 0
+        for val in index:
+            if val is None:
+                new_axes += 1
+            elif val is Ellipsis:
+                ellipses += 1
+                if ellipses > 1:
+                    raise ValueError("Cannot use more than one ellipsis when indexing")
+
+        if ellipses == 1:
+            missing_dims = len(self.shape) + new_axes - len(index) + 1
+            dim = index.index(Ellipsis)
+            index = index[:dim] + [slice(None) for _ in range(missing_dims)] + index[dim + 1 :]
+
+        new_shape = []
+        new_strides = []
+        offset = 0
+        for dim, idx in enumerate(index):
+            if idx is None:
+                new_shape.append(1)
+                new_strides.append(0)
+            elif isinstance(idx, slice):
+                start, stop, step = idx.indices(self.shape[dim])
+                new_dim = (stop - start + (step - 1)) // step
+                new_shape.append(new_dim)
+                new_strides.append(self.strides[dim] * step)
+                offset += start * self.strides[dim]
+            elif isinstance(idx, int):
+                if idx < 0 or idx >= self.shape[dim]:
+                    raise IndexingError(
+                        f"Index {idx} out of range for dimension {dim} with size {self.shape[dim]}"
+                    )
+                offset += idx * self.strides[dim]
+            else:
+                raise ValueError(f"Invalid index {idx} of type {type(idx)}")
 
         if len(index) < len(self.shape):
-            index = index + [slice(None) for _ in range(len(self.shape) - len(index))]
+            for dim in range(len(index), len(self.shape)):
+                new_shape.append(self.shape[dim])
+                new_strides.append(self.strides[dim])
 
-        to_process = deque([index])
-
-        # parse slices
-        for i in range(len(self.shape)):
-            layers = len(to_process)
-            for layer in range(layers):
-                curr = to_process.popleft()
-                if isinstance(curr[i], slice):
-                    start = 0 if curr[i].start is None else curr[i].start
-                    stop = self.shape[i] if curr[i].stop is None else curr[i].stop
-                    step = 1 if curr[i].step is None else curr[i].step
-                    for j in range(start, stop, step):
-                        to_process.append(np.where(np.arange(len(self.shape)) == i, j, curr))
-                elif isinstance(curr[i], (int, np.integer)):
-                    to_process.append(curr)
-                else:
-                    raise ValueError(
-                        f"Invalid index {curr[i]} type {type(curr[i])} used at position {i}"
-                    )
-
-        is_view = any(isinstance(idx, slice) for idx in index)
-
-        if not is_view:
-            return self._storage[index_to_position(index, self.strides)]
+        if any(idx is None or isinstance(idx, slice) for idx in index):
+            return TensorData(self._storage, tuple(new_shape), tuple(new_strides), is_view=True)
         else:
-            new_shape = []
-            new_strides = []
-            offset = 0
-            for i, idx in enumerate(index):
-                if isinstance(idx, slice):
-                    start, stop, step = idx.indices(self.shape[i])
-                    new_dim = (stop - start + (step - 1)) // step
-                    new_shape.append(new_dim)
-                    new_strides.append(self.strides[i] * step)
-                    offset += start * self.strides[i]
-                elif isinstance(idx, int):
-                    if idx < 0 or idx >= self.shape[i]:
-                        raise IndexingError(
-                            f"Index {idx} out of range for dimension {i} with size {self.shape[i]}."
-                        )
-                    offset += idx * self.strides[i]
-            return TensorData(self._storage, tuple(new_shape), tuple(new_strides), is_view=is_view)
+            if len(new_shape) == 0:
+                return self._storage[offset]
+            return TensorData(self._storage, tuple(new_shape), tuple(new_strides))
 
     def indices(self) -> Iterable[UserIndex]:
         lshape: Shape = array(self.shape)
