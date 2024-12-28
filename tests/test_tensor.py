@@ -14,8 +14,9 @@ def test_tensor_indexing_1():
     t1 = torch.arange(5)
     t2 = t1[:]
     t3 = t1[...]
+    t4 = t1[:5]
     for i in range(5):
-        assert t1[i] == t2[i] == t3[i]
+        assert t1[i] == t2[i] == t3[i] == t4[i] == i
 
 
 def test_tensor_indexing_2():

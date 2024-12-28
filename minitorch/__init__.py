@@ -16,4 +16,4 @@ rand = with_current_backend(rand)
 tensor = with_current_backend(tensor)
 arange = with_current_backend(arange)
 
-from minitorch._logic import where, isclose  # noqa: F401
+from minitorch._logic import where, outer, isclose  # noqa: F401
