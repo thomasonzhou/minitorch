@@ -28,6 +28,7 @@ from ._tensor_functions import (
     Mul,
     Neg,
     Permute,
+    Pow,
     ReLU,
     Tanh,
     GeLU,
@@ -358,6 +359,11 @@ class Tensor:
 
     def __radd__(self, b: TensorLike) -> Tensor:
         return Add.apply(self, self._ensure_tensor(b))
+
+    def __pow__(self, power: float) -> Tensor:
+        if not isinstance(power, (float, int, np.integer, np.floating)):
+            raise TypeError("Only float and integer powers are supported for backpropagation")
+        return Pow.apply(self, self._ensure_tensor(power))
 
     def __hash__(self) -> int:
         return self.unique_id

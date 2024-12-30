@@ -23,6 +23,9 @@ def neg(x: float) -> float:
     """Compute the negation of x."""
     return -1.0 * x
 
+def pow(x: float, power: float) -> float:
+    """Compute the power of x to a value"""
+    return x ** power
 
 def lt(x: float, y: float) -> float:
     """Determine if x is less than y."""

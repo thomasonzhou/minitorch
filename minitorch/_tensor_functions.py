@@ -83,6 +83,18 @@ class Neg(Function):
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
         return grad_output.f.neg_map(grad_output)
 
+class Pow(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, power: Tensor) -> Tensor:
+        pow_tensor = minitorch.ones(t1.shape) * power
+        ctx.save_for_backward(t1, pow_tensor)
+        return t1.f.pow_zip(pow_tensor)
+    
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        (t1, pow_tensor,) = ctx.saved_tensors
+        return pow_tensor * t1.f.mul_zip(t1.f.pow_zip(t1, pow_tensor - 1.0), grad_output), grad_output.zeros(grad_output.shape)
+
 
 class Inv(Function):
     @staticmethod
